@@ -44,18 +44,20 @@ async def startup_event():
     """应用启动时的初始化"""
     logger.info("🚀 AI User Research API 启动中...")
 
-    # 检查必需的 API Key
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-    if not anthropic_key:
-        logger.warning("⚠️ ANTHROPIC_API_KEY 未配置 - 某些功能可能不可用")
+    # 检查推荐的 OpenRouter API Key
+    openrouter_key = os.getenv("OPENROUTER_API_KEY")
+    if openrouter_key:
+        logger.info("✅ OPENROUTER_API_KEY 已配置（推荐）")
     else:
+        logger.warning("⚠️ OPENROUTER_API_KEY 未配置")
+
+    # 检查可选的 API Keys
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    if anthropic_key:
         logger.info("✅ ANTHROPIC_API_KEY 已配置")
 
-    # 记录可选配置
     if os.getenv("OPENAI_API_KEY"):
         logger.info("✅ OPENAI_API_KEY 已配置")
-    if os.getenv("OPENROUTER_API_KEY"):
-        logger.info("✅ OPENROUTER_API_KEY 已配置")
 
     # 记录并发配置
     survey_concurrency = os.getenv("SURVEY_MAX_CONCURRENCY", "100")
@@ -108,19 +110,22 @@ async def health_check():
             "checks": {}
         }
 
+        # 检查 OpenRouter API Key
+        if os.getenv("OPENROUTER_API_KEY"):
+            health_status["checks"]["openrouter_api"] = "configured"
+        else:
+            health_status["checks"]["openrouter_api"] = "missing"
+            health_status["status"] = "degraded"
+
         # 检查 Anthropic API Key
         if os.getenv("ANTHROPIC_API_KEY"):
             health_status["checks"]["anthropic_api"] = "configured"
         else:
-            health_status["checks"]["anthropic_api"] = "missing"
-            health_status["status"] = "degraded"
+            health_status["checks"]["anthropic_api"] = "not_configured"
 
         # 检查可选配置
         health_status["checks"]["openai_api"] = (
             "configured" if os.getenv("OPENAI_API_KEY") else "not_configured"
-        )
-        health_status["checks"]["openrouter_api"] = (
-            "configured" if os.getenv("OPENROUTER_API_KEY") else "not_configured"
         )
 
         return health_status
@@ -141,9 +146,9 @@ async def get_config():
         "focus_group_max_concurrency": int(os.getenv("FOCUS_GROUP_MAX_CONCURRENCY", "50")),
         "python_version": os.getenv("PYTHON_VERSION", "3.11.0"),
         "api_keys_configured": {
+            "openrouter": bool(os.getenv("OPENROUTER_API_KEY")),
             "anthropic": bool(os.getenv("ANTHROPIC_API_KEY")),
-            "openai": bool(os.getenv("OPENAI_API_KEY")),
-            "openrouter": bool(os.getenv("OPENROUTER_API_KEY"))
+            "openai": bool(os.getenv("OPENAI_API_KEY"))
         }
     }
 

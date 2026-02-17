@@ -40,11 +40,12 @@ AI驱动的用户研究平台 - 演示如何使用三种Agent框架实现四种�
    在 Render Dashboard 中设置以下环境变量：
 
    **必需**:
-   - `ANTHROPIC_API_KEY`: 你的 Anthropic API Key
+   - `OPENROUTER_API_KEY`: 你的 OpenRouter API Key（推荐）
+   - `OPENROUTER_API_URL`: https://openrouter.ai/api/v1
 
    **可选**:
+   - `ANTHROPIC_API_KEY`: Anthropic API Key（如需直接使用）
    - `OPENAI_API_KEY`: OpenAI API Key（如需使用）
-   - `OPENROUTER_API_KEY`: OpenRouter API Key（如需使用）
    - `SURVEY_MAX_CONCURRENCY`: 问卷最大并发数（默认100）
    - `FOCUS_GROUP_MAX_CONCURRENCY`: 焦点小组最大并发数（默认50）
    - `LOG_LEVEL`: 日志级别（默认INFO）
@@ -83,9 +84,10 @@ pip install -r requirements.txt
 创建 `.env` 文件：
 
 ```env
-ANTHROPIC_API_KEY=your_api_key_here
+OPENROUTER_API_KEY=sk-or-v1-xxx
+OPENROUTER_API_URL=https://openrouter.ai/api/v1
+ANTHROPIC_API_KEY=your_anthropic_key_here  # 可选
 OPENAI_API_KEY=your_openai_key_here  # 可选
-OPENROUTER_API_KEY=your_openrouter_key_here  # 可选
 SURVEY_MAX_CONCURRENCY=100
 FOCUS_GROUP_MAX_CONCURRENCY=50
 LOG_LEVEL=INFO
