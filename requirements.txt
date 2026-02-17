@@ -1,0 +1,21 @@
+# FastAPI 和 Web 服务
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# CORS 支持
+python-dotenv==1.0.0
+
+# 日期时间处理
+python-dateutil==2.8.2
+
+# AI 和机器学习（未来扩展）
+# anthropic==0.18.1
+# openai==1.12.0
+
+# 数据处理
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# 日志和监控
+python-json-logger==2.0.7
