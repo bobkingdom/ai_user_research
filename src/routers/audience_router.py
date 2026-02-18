@@ -2,19 +2,24 @@
 API 路由模块 - 受众生成相关 API
 使用 SmolaAgents Manager 模式实现流水线生成
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-router = APIRouter(prefix="/api/audiences", tags=["受众生成 (SmolaAgents)"])
+from src.routers.deps import verify_api_key
+
+router = APIRouter(
+    prefix="/api/audiences",
+    tags=["受众生成 (SmolaAgents)"],
+    dependencies=[Depends(verify_api_key)]
+)
 
 
 # ===== Request Models =====
 
 class AudienceGenerateRequest(BaseModel):
-    """单个受众生成请求"""
     description: str = Field(..., description="受众描述，如：35岁互联网产品经理")
     generation_config: Optional[Dict[str, Any]] = Field(
         default={
@@ -26,36 +31,46 @@ class AudienceGenerateRequest(BaseModel):
 
 
 class BatchAudienceGenerateRequest(BaseModel):
-    """批量受众生成请求"""
     descriptions: List[str] = Field(..., description="受众描述列表")
     concurrency: int = Field(default=5, ge=1, le=20, description="并发数")
     generation_config: Optional[Dict[str, Any]] = None
 
 
+class GetTaskRequest(BaseModel):
+    task_id: str = Field(..., description="任务ID")
+
+
+class GetAudienceRequest(BaseModel):
+    audience_id: str = Field(..., description="受众ID")
+
+
+class ListAudiencesRequest(BaseModel):
+    skip: int = Field(default=0, ge=0)
+    limit: int = Field(default=20, ge=1, le=100)
+    search: Optional[str] = None
+
+
 # ===== Response Models =====
 
 class AudienceProfile(BaseModel):
-    """受众画像"""
     audience_id: str
     name: str
-    demographics: Dict[str, Any]  # age, gender, location, education, income_level
-    professional: Dict[str, Any]  # industry, position, company_size, work_experience
-    personality: Dict[str, Any]  # personality_type, communication_style, core_traits
-    lifestyle: Dict[str, Any]  # hobbies, values, brand_preferences
-    match_score: float = Field(..., ge=0, le=1, description="与描述的匹配度")
+    demographics: Dict[str, Any]
+    professional: Dict[str, Any]
+    personality: Dict[str, Any]
+    lifestyle: Dict[str, Any]
+    match_score: float = Field(..., ge=0, le=1)
     created_at: datetime
 
 
 class BatchGenerationTask(BaseModel):
-    """批量生成任务"""
     task_id: str
     total_count: int
-    status: str  # processing, completed, failed
+    status: str
     progress_url: str
 
 
 class BatchGenerationProgress(BaseModel):
-    """批量生成进度"""
     task_id: str
     status: str
     total_count: int
@@ -81,11 +96,6 @@ async def generate_audience(request: AudienceGenerateRequest):
     **注意**: 此端点暂未实现，返回示例数据
     """
     # TODO: 实现 SmolaAgents 流水线
-    # from src.pipelines.audience_generation import AudienceGenerationPipeline
-    # pipeline = AudienceGenerationPipeline()
-    # audience = await pipeline.generate(request.description, request.generation_config)
-
-    # 临时返回示例数据
     return AudienceProfile(
         audience_id=f"aud-{uuid.uuid4().hex[:12]}",
         name="张明（示例）",
@@ -124,31 +134,22 @@ async def batch_generate_audiences(
     """
     批量生成受众画像（异步任务）
 
-    返回任务ID，通过轮询 GET /api/audiences/tasks/{task_id} 查询进度
+    返回任务ID，通过 POST /api/audiences/tasks/query 查询进度
 
     **注意**: 此端点暂未实现，返回示例任务
     """
     task_id = f"gen-task-{uuid.uuid4().hex[:12]}"
 
-    # TODO: 启动后台任务
-    # background_tasks.add_task(
-    #     run_batch_generation,
-    #     task_id=task_id,
-    #     descriptions=request.descriptions,
-    #     concurrency=request.concurrency,
-    #     config=request.generation_config
-    # )
-
     return BatchGenerationTask(
         task_id=task_id,
         total_count=len(request.descriptions),
         status="processing",
-        progress_url=f"/api/audiences/tasks/{task_id}"
+        progress_url=f"/api/audiences/tasks/query"
     )
 
 
-@router.get("/tasks/{task_id}", response_model=BatchGenerationProgress)
-async def get_generation_progress(task_id: str):
+@router.post("/tasks/query", response_model=BatchGenerationProgress)
+async def get_generation_progress(request: GetTaskRequest):
     """
     查询批量生成任务进度
 
@@ -156,13 +157,8 @@ async def get_generation_progress(task_id: str):
 
     **注意**: 此端点暂未实现，返回示例进度
     """
-    # TODO: 从任务管理器获取真实进度
-    # from src.utils.task_manager import TaskManager
-    # progress = await TaskManager.get_task_progress(task_id)
-
-    # 临时返回示例数据
     return BatchGenerationProgress(
-        task_id=task_id,
+        task_id=request.task_id,
         status="completed",
         total_count=5,
         completed_count=5,
@@ -173,8 +169,8 @@ async def get_generation_progress(task_id: str):
     )
 
 
-@router.get("/{audience_id}", response_model=AudienceProfile)
-async def get_audience(audience_id: str):
+@router.post("/detail", response_model=AudienceProfile)
+async def get_audience(request: GetAudienceRequest):
     """
     获取受众详情
 
@@ -183,12 +179,8 @@ async def get_audience(audience_id: str):
     raise HTTPException(status_code=501, detail="端点尚未实现")
 
 
-@router.get("/", response_model=List[AudienceProfile])
-async def list_audiences(
-    skip: int = 0,
-    limit: int = 20,
-    search: Optional[str] = None
-):
+@router.post("/list", response_model=List[AudienceProfile])
+async def list_audiences(request: ListAudiencesRequest):
     """
     获取受众列表
 

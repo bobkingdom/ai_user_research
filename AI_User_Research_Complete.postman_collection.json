@@ -1,10 +1,10 @@
 {
   "info": {
     "name": "AI User Research - Complete API",
-    "description": "完整的AI用户研究API测试集合，包含受众生成、1对1访谈、焦点小组和问卷投放四大场景",
+    "description": "完整的AI用户研究API测试集合，所有接口均使用POST方法，需要在Header中携带X-API-Key",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "ai-user-research-complete-v1",
-    "version": "1.0.0"
+    "_postman_id": "ai-user-research-complete-v2",
+    "version": "2.0.0"
   },
   "auth": {
     "type": "apikey",
@@ -17,6 +17,11 @@
       {
         "key": "key",
         "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
         "type": "string"
       }
     ]
@@ -31,47 +36,45 @@
       "key": "api_key",
       "value": "sk-test-example",
       "type": "string"
-    },
-    {
-      "key": "audience_id",
-      "value": "aud-example123456",
-      "type": "string"
-    },
-    {
-      "key": "interview_id",
-      "value": "itv-example123456",
-      "type": "string"
-    },
-    {
-      "key": "focus_group_id",
-      "value": "fg-example123456",
-      "type": "string"
-    },
-    {
-      "key": "survey_id",
-      "value": "srv-20260101-abc123",
-      "type": "string"
-    },
-    {
-      "key": "task_id",
-      "value": "task-example1234",
-      "type": "string"
     }
   ],
   "item": [
     {
+      "name": "0. 系统",
+      "item": [
+        {
+          "name": "健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [
+            {
+              "name": "健康",
+              "status": "OK",
+              "code": 200,
+              "body": "{\"status\": \"healthy\", \"timestamp\": \"2026-02-18T10:00:00Z\", \"checks\": {\"openrouter_api\": \"configured\", \"anthropic_api\": \"not_configured\", \"openai_api\": \"not_configured\"}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "1. 受众生成 (SmolaAgents)",
-      "description": "使用 SmolaAgents Manager 模式生成受众画像",
+      "description": "使用 SmolaAgents Manager 模式生成受众画像，所有接口需要 X-API-Key Header",
       "item": [
         {
           "name": "生成单个受众画像",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
@@ -81,21 +84,14 @@
               "raw": "{{base_url}}/api/audiences/generate",
               "host": ["{{base_url}}"],
               "path": ["api", "audiences", "generate"]
-            },
-            "description": "生成单个受众画像\n\n使用 SmolaAgents Manager 流水线：\n- IntentAnalyzer: 分析描述意图\n- PersonaGenerator: 生成人格特征\n- AudienceGenerator: 组装完整画像"
+            }
           },
           "response": [
             {
-              "name": "成功响应示例",
+              "name": "成功",
               "status": "Created",
               "code": 201,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"audience_id\": \"aud-a1b2c3d4e5f6\",\n  \"name\": \"张明（示例）\",\n  \"demographics\": {\n    \"age\": 35,\n    \"gender\": \"男\",\n    \"location\": \"北京\",\n    \"education\": \"本科\",\n    \"income_level\": \"20-30万\"\n  },\n  \"professional\": {\n    \"industry\": \"互联网\",\n    \"position\": \"产品经理\",\n    \"company_size\": \"500-1000人\",\n    \"work_experience\": 8\n  },\n  \"personality\": {\n    \"personality_type\": \"INTJ\",\n    \"communication_style\": \"直接、逻辑性强\",\n    \"core_traits\": [\"追求效率\", \"注重细节\", \"独立思考\"]\n  },\n  \"lifestyle\": {\n    \"hobbies\": [\"阅读\", \"跑步\", \"科技产品\"],\n    \"values\": [\"效率\", \"创新\", \"专业\"]\n  },\n  \"match_score\": 0.95,\n  \"created_at\": \"2026-02-18T10:30:00Z\"\n}"
+              "body": "{\n  \"audience_id\": \"aud-a1b2c3d4e5f6\",\n  \"name\": \"张明（示例）\",\n  \"demographics\": {\"age\": 35, \"gender\": \"男\", \"location\": \"北京\", \"education\": \"本科\", \"income_level\": \"20-30万\"},\n  \"professional\": {\"industry\": \"互联网\", \"position\": \"产品经理\", \"company_size\": \"500-1000人\", \"work_experience\": 8},\n  \"personality\": {\"personality_type\": \"INTJ\", \"communication_style\": \"直接、逻辑性强\", \"core_traits\": [\"追求效率\", \"注重细节\", \"独立思考\"]},\n  \"lifestyle\": {\"hobbies\": [\"阅读\", \"跑步\", \"科技产品\"], \"values\": [\"效率\", \"创新\", \"专业\"]},\n  \"match_score\": 0.95,\n  \"created_at\": \"2026-02-18T10:30:00Z\"\n}"
             }
           ]
         },
@@ -104,117 +100,106 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"descriptions\": [\n    \"25岁运营专员，关注增长和数据分析\",\n    \"40岁创业者，有ToB SaaS经验\",\n    \"28岁设计师，追求极简美学\",\n    \"32岁开发工程师，喜欢开源技术\",\n    \"35岁销售总监，注重客户关系管理\"\n  ],\n  \"concurrency\": 5,\n  \"generation_config\": {\n    \"model\": \"claude-3-5-sonnet\",\n    \"personality_framework\": \"MBTI\"\n  }\n}"
+              "raw": "{\n  \"descriptions\": [\n    \"25岁运营专员，关注增长和数据分析\",\n    \"40岁创业者，有ToB SaaS经验\",\n    \"28岁设计师，追求极简美学\"\n  ],\n  \"concurrency\": 3,\n  \"generation_config\": {\n    \"model\": \"claude-3-5-sonnet\",\n    \"personality_framework\": \"MBTI\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/audiences/batch-generate",
               "host": ["{{base_url}}"],
               "path": ["api", "audiences", "batch-generate"]
-            },
-            "description": "批量生成受众画像（异步任务）\n\n返回任务ID，通过轮询查询进度"
+            }
           },
           "response": [
             {
-              "name": "任务创建成功",
+              "name": "任务创建",
               "status": "Accepted",
               "code": 202,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"task_id\": \"gen-task-abc123def456\",\n  \"total_count\": 5,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/audiences/tasks/gen-task-abc123def456\"\n}"
+              "body": "{\n  \"task_id\": \"gen-task-abc123def456\",\n  \"total_count\": 3,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/audiences/tasks/query\"\n}"
             }
           ]
         },
         {
           "name": "查询批量生成进度",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/audiences/tasks/{{task_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "audiences", "tasks", "{{task_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"gen-task-abc123def456\"\n}"
             },
-            "description": "查询批量生成任务进度\n\n建议轮询间隔: 1-2秒"
+            "url": {
+              "raw": "{{base_url}}/api/audiences/tasks/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "tasks", "query"]
+            }
           },
           "response": [
             {
-              "name": "进行中",
+              "name": "完成",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"task_id\": \"gen-task-abc123def456\",\n  \"status\": \"processing\",\n  \"total_count\": 5,\n  \"completed_count\": 3,\n  \"success_count\": 3,\n  \"failed_count\": 0,\n  \"progress_percentage\": 60.0,\n  \"results\": []\n}"
-            },
-            {
-              "name": "已完成",
-              "status": "OK",
-              "code": 200,
-              "body": "{\n  \"task_id\": \"gen-task-abc123def456\",\n  \"status\": \"completed\",\n  \"total_count\": 5,\n  \"completed_count\": 5,\n  \"success_count\": 5,\n  \"failed_count\": 0,\n  \"progress_percentage\": 100.0,\n  \"results\": []\n}"
+              "body": "{\n  \"task_id\": \"gen-task-abc123def456\",\n  \"status\": \"completed\",\n  \"total_count\": 3,\n  \"completed_count\": 3,\n  \"success_count\": 3,\n  \"failed_count\": 0,\n  \"progress_percentage\": 100.0,\n  \"results\": []\n}"
             }
           ]
         },
         {
           "name": "获取受众详情",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/audiences/{{audience_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "audiences", "{{audience_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience_id\": \"aud-a1b2c3d4e5f6\"\n}"
             },
-            "description": "获取单个受众的完整信息"
+            "url": {
+              "raw": "{{base_url}}/api/audiences/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "detail"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         },
         {
           "name": "获取受众列表",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/audiences?skip=0&limit=20&search=产品经理",
-              "host": ["{{base_url}}"],
-              "path": ["api", "audiences"],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "search",
-                  "value": "产品经理"
-                }
-              ]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skip\": 0,\n  \"limit\": 20,\n  \"search\": \"产品经理\"\n}"
             },
-            "description": "获取受众列表，支持分页和搜索"
+            "url": {
+              "raw": "{{base_url}}/api/audiences/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "list"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         }
@@ -222,28 +207,25 @@
     },
     {
       "name": "2. 1对1访谈 (Claude Agent SDK)",
-      "description": "使用 Claude Agent SDK + MCP Tools 实现深度访谈",
+      "description": "使用 Claude Agent SDK + MCP Tools 实现深度访谈，所有接口需要 X-API-Key Header",
       "item": [
         {
           "name": "创建访谈会话",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"audience_id\": \"aud-a1b2c3d4e5f6\",\n  \"topic\": \"产品工具使用体验调研\",\n  \"research_objectives\": [\n    \"了解当前使用的工具及痛点\",\n    \"探索对新功能的期待\",\n    \"评估付费意愿和价格敏感度\"\n  ],\n  \"mcp_tools\": [\n    \"personality\",\n    \"chat_history\",\n    \"web_search\"\n  ]\n}"
+              "raw": "{\n  \"audience_id\": \"aud-a1b2c3d4e5f6\",\n  \"topic\": \"产品工具使用体验调研\",\n  \"research_objectives\": [\n    \"了解当前使用的工具及痛点\",\n    \"探索对新功能的期待\",\n    \"评估付费意愿和价格敏感度\"\n  ],\n  \"mcp_tools\": [\"personality\", \"chat_history\", \"web_search\"]\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/interviews",
+              "raw": "{{base_url}}/api/interviews/create",
               "host": ["{{base_url}}"],
-              "path": ["api", "interviews"]
-            },
-            "description": "创建1对1访谈会话\n\n使用 Claude Agent SDK + SKILLS:\n- realistic-persona-chat SKILL\n- MCP Tools: personality, chat_history, web_search\n- 三阶段Loop: Gather → Action → Verify"
+              "path": ["api", "interviews", "create"]
+            }
           },
           "response": [
             {
@@ -259,21 +241,18 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"message\": \"您平时工作中主要使用哪些产品工具？有什么让您感到不便的地方吗？\"\n}"
+              "raw": "{\n  \"interview_id\": \"itv-abc123def456\",\n  \"message\": \"您平时工作中主要使用哪些产品工具？有什么让您感到不便的地方吗？\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/interviews/{{interview_id}}/messages",
+              "raw": "{{base_url}}/api/interviews/messages/send",
               "host": ["{{base_url}}"],
-              "path": ["api", "interviews", "{{interview_id}}", "messages"]
-            },
-            "description": "向访谈会话发送消息\n\nAgent 会基于人格画像和访谈历史，使用 MCP Tools 生成真实回答"
+              "path": ["api", "interviews", "messages", "send"]
+            }
           },
           "response": [
             {
@@ -288,66 +267,80 @@
           "name": "结束访谈",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
             "body": {
               "mode": "raw",
-              "raw": ""
+              "raw": "{\n  \"interview_id\": \"itv-abc123def456\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/interviews/{{interview_id}}/end",
+              "raw": "{{base_url}}/api/interviews/end",
               "host": ["{{base_url}}"],
-              "path": ["api", "interviews", "{{interview_id}}", "end"]
-            },
-            "description": "结束访谈会话，获取摘要和洞察"
+              "path": ["api", "interviews", "end"]
+            }
           },
           "response": [
             {
               "name": "访谈摘要",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"interview_id\": \"itv-abc123def456\",\n  \"status\": \"completed\",\n  \"total_rounds\": 8,\n  \"duration_seconds\": 1200,\n  \"summary\": \"访谈对象是一位经验丰富的产品经理，核心痛点在于工具间的数据同步和切换成本...\",\n  \"insights\": [\n    {\n      \"type\": \"pain_point\",\n      \"content\": \"多工具切换导致的效率损失\",\n      \"confidence_score\": 0.89\n    }\n  ],\n  \"emotion_timeline\": [\n    {\"round\": 1, \"emotion\": \"neutral\"},\n    {\"round\": 3, \"emotion\": \"frustrated\"}\n  ],\n  \"ended_at\": \"2026-02-18T10:55:00Z\"\n}"
+              "body": "{\n  \"interview_id\": \"itv-abc123def456\",\n  \"status\": \"completed\",\n  \"total_rounds\": 8,\n  \"duration_seconds\": 1200,\n  \"summary\": \"访谈对象是一位经验丰富的产品经理，核心痛点在于工具间的数据同步和切换成本...\",\n  \"insights\": [{\"type\": \"pain_point\", \"content\": \"多工具切换导致的效率损失\", \"confidence_score\": 0.89}],\n  \"emotion_timeline\": [{\"round\": 1, \"emotion\": \"neutral\"}, {\"round\": 3, \"emotion\": \"frustrated\"}],\n  \"ended_at\": \"2026-02-18T10:55:00Z\"\n}"
             }
           ]
         },
         {
           "name": "获取访谈详情",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/interviews/{{interview_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "interviews", "{{interview_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interview_id\": \"itv-abc123def456\"\n}"
             },
-            "description": "获取访谈会话的详细信息"
+            "url": {
+              "raw": "{{base_url}}/api/interviews/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "detail"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         },
         {
           "name": "获取访谈消息历史",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/interviews/{{interview_id}}/messages",
-              "host": ["{{base_url}}"],
-              "path": ["api", "interviews", "{{interview_id}}", "messages"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interview_id\": \"itv-abc123def456\"\n}"
             },
-            "description": "获取访谈的完整消息记录"
+            "url": {
+              "raw": "{{base_url}}/api/interviews/messages/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "messages", "list"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         }
@@ -355,28 +348,25 @@
     },
     {
       "name": "3. 焦点小组 (Agno Team)",
-      "description": "使用 Agno Team 实现批量并发讨论",
+      "description": "使用 Agno Team 实现批量并发讨论，所有接口需要 X-API-Key Header",
       "item": [
         {
           "name": "创建焦点小组",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"智能家居产品体验焦点小组\",\n  \"topic\": \"智能家居设备使用体验和痛点讨论\",\n  \"background\": \"我们正在开发新一代智能家居平台，希望了解用户的真实使用场景和期待\",\n  \"research_objectives\": [\n    \"了解当前智能家居设备使用情况\",\n    \"收集设备互联互通痛点\",\n    \"探索用户对统一控制平台的期待\"\n  ],\n  \"participant_count\": 20\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/focus-groups",
+              "raw": "{{base_url}}/api/focus-groups/create",
               "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups"]
-            },
-            "description": "创建焦点小组\n\n使用 Agno Team:\n- 创建 Team（包含多个 Participant Agents）\n- 2μs per agent 级别的并发性能"
+              "path": ["api", "focus-groups", "create"]
+            }
           },
           "response": [
             {
@@ -392,28 +382,25 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"participant_ids\": [\n    \"aud-participant-001\",\n    \"aud-participant-002\",\n    \"aud-participant-003\",\n    \"aud-participant-004\",\n    \"aud-participant-005\"\n  ]\n}"
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"participant_ids\": [\n    \"aud-participant-001\",\n    \"aud-participant-002\",\n    \"aud-participant-003\"\n  ]\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}/participants",
+              "raw": "{{base_url}}/api/focus-groups/participants/add",
               "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}", "participants"]
-            },
-            "description": "向焦点小组添加参与者"
+              "path": ["api", "focus-groups", "participants", "add"]
+            }
           },
           "response": [
             {
               "name": "添加成功",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"added_count\": 5,\n  \"total_participants\": 5\n}"
+              "body": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"added_count\": 3,\n  \"total_participants\": 3\n}"
             }
           ]
         },
@@ -422,75 +409,72 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"participant_ids\": [\n    \"aud-participant-001\",\n    \"aud-participant-002\",\n    \"aud-participant-003\",\n    \"aud-participant-004\",\n    \"aud-participant-005\"\n  ],\n  \"host_message\": \"大家好！今天我们来聊聊智能家居设备的使用体验。首先想请大家分享一下，你们家里都有哪些智能设备？使用中遇到过什么问题吗？\"\n}"
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"participant_ids\": [\n    \"aud-participant-001\",\n    \"aud-participant-002\",\n    \"aud-participant-003\"\n  ],\n  \"host_message\": \"大家好！今天我们来聊聊智能家居设备的使用体验。首先想请大家分享一下，你们家里都有哪些智能设备？使用中遇到过什么问题吗？\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}/batch-responses",
+              "raw": "{{base_url}}/api/focus-groups/batch-responses",
               "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}", "batch-responses"]
-            },
-            "description": "批量生成参与者回答（异步任务）\n\n使用 Agno Team.run_parallel():\n- 所有参与者并发回答（2μs per agent）\n- 返回 task_id，通过轮询查询进度\n- 防止重复提交（相同请求返回已有任务）"
+              "path": ["api", "focus-groups", "batch-responses"]
+            }
           },
           "response": [
             {
-              "name": "任务创建成功",
+              "name": "任务创建",
               "status": "Accepted",
               "code": 202,
-              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"is_new_task\": true,\n  \"total_participants\": 5,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/focus-groups/fg-abc123def456/batch-tasks/batch-task-12345678\"\n}"
-            },
-            {
-              "name": "重复请求（返回已有任务）",
-              "status": "Accepted",
-              "code": 202,
-              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"is_new_task\": false,\n  \"total_participants\": 5,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/focus-groups/fg-abc123def456/batch-tasks/batch-task-12345678\"\n}"
+              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"is_new_task\": true,\n  \"total_participants\": 3,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/focus-groups/batch-tasks/query\"\n}"
             }
           ]
         },
         {
           "name": "查询批量任务进度",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}/batch-tasks/{{task_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}", "batch-tasks", "{{task_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"task_id\": \"batch-task-12345678\"\n}"
             },
-            "description": "查询批量任务进度\n\n建议轮询间隔: 1-2秒"
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/batch-tasks/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "batch-tasks", "query"]
+            }
           },
           "response": [
             {
-              "name": "进行中",
+              "name": "完成",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"status\": \"processing\",\n  \"total_count\": 20,\n  \"completed_count\": 12,\n  \"success_count\": 12,\n  \"failed_count\": 0,\n  \"progress_percentage\": 60.0,\n  \"results\": []\n}"
-            },
-            {
-              "name": "已完成",
-              "status": "OK",
-              "code": 200,
-              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"status\": \"completed\",\n  \"total_count\": 20,\n  \"completed_count\": 20,\n  \"success_count\": 19,\n  \"failed_count\": 1,\n  \"progress_percentage\": 100.0,\n  \"results\": [\n    {\n      \"participant_id\": \"aud-101\",\n      \"success\": true,\n      \"content\": \"我家里有小米的智能音箱和智能灯泡，使用体验整体不错...\",\n      \"message_id\": \"msg-001\"\n    },\n    {\n      \"participant_id\": \"aud-102\",\n      \"success\": false,\n      \"error\": \"Participant not found\"\n    }\n  ]\n}"
+              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"status\": \"completed\",\n  \"total_count\": 20,\n  \"completed_count\": 20,\n  \"success_count\": 19,\n  \"failed_count\": 1,\n  \"progress_percentage\": 100.0,\n  \"results\": [{\"participant_id\": \"aud-101\", \"success\": true, \"content\": \"我家里有小米的智能音箱...\", \"message_id\": \"msg-001\"}]\n}"
             }
           ]
         },
         {
           "name": "检查活跃批量任务",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}/active-batch-task",
-              "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}", "active-batch-task"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\"\n}"
             },
-            "description": "检查是否有正在运行的批量任务\n\n用于防止重复提交"
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/active-batch-task/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "active-batch-task", "query"]
+            }
           },
           "response": [
             {
@@ -498,85 +482,87 @@
               "status": "OK",
               "code": 200,
               "body": "null"
-            },
-            {
-              "name": "有活跃任务",
-              "status": "OK",
-              "code": 200,
-              "body": "{\n  \"task_id\": \"batch-task-12345678\",\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"is_new_task\": false,\n  \"total_participants\": 20,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/focus-groups/fg-abc123def456/batch-tasks/batch-task-12345678\"\n}"
             }
           ]
         },
         {
           "name": "获取焦点小组洞察",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}/insights",
-              "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}", "insights"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\"\n}"
             },
-            "description": "获取焦点小组讨论洞察\n\n从讨论消息中自动提取痛点、需求、偏好、行为模式"
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/insights/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "insights", "query"]
+            }
           },
           "response": [
             {
               "name": "洞察列表",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"total_insights\": 2,\n  \"insights\": [\n    {\n      \"insight_id\": \"ins-001\",\n      \"type\": \"pain_point\",\n      \"content\": \"智能设备间的互联互通问题严重\",\n      \"confidence_score\": 0.92,\n      \"evidence\": [\n        {\n          \"participant_id\": \"aud-101\",\n          \"quote\": \"我家有小米和苹果的设备，但它们无法互相控制\"\n        }\n      ],\n      \"created_at\": \"2026-02-18T11:30:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"total_insights\": 2,\n  \"insights\": [{\"insight_id\": \"ins-001\", \"type\": \"pain_point\", \"content\": \"智能设备间的互联互通问题严重\", \"confidence_score\": 0.92, \"evidence\": [{\"participant_id\": \"aud-101\", \"quote\": \"我家有小米和苹果的设备，但它们无法互相控制\"}], \"created_at\": \"2026-02-18T11:30:00Z\"}]\n}"
             }
           ]
         },
         {
           "name": "获取焦点小组详情",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\"\n}"
             },
-            "description": "获取焦点小组的详细信息"
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "detail"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         },
         {
           "name": "获取焦点小组消息",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/focus-groups/{{focus_group_id}}/messages?skip=0&limit=50",
-              "host": ["{{base_url}}"],
-              "path": ["api", "focus-groups", "{{focus_group_id}}", "messages"],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
-                },
-                {
-                  "key": "limit",
-                  "value": "50"
-                }
-              ]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg-abc123def456\",\n  \"skip\": 0,\n  \"limit\": 50\n}"
             },
-            "description": "获取焦点小组的讨论消息历史"
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/messages/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "messages", "list"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         }
@@ -584,28 +570,25 @@
     },
     {
       "name": "4. 问卷投放 (Agno Workflow)",
-      "description": "使用 Agno Workflow 实现批量问卷投放",
+      "description": "使用 Agno Workflow 实现批量问卷投放，所有接口需要 X-API-Key Header",
       "item": [
         {
           "name": "创建问卷",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"产品满意度调研问卷\",\n  \"description\": \"了解用户对产品各方面的满意度和改进建议\",\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"type\": \"single_choice\",\n      \"content\": \"您对我们产品的整体满意度如何？\",\n      \"required\": true,\n      \"options\": [\"非常满意\", \"满意\", \"一般\", \"不满意\", \"非常不满意\"]\n    },\n    {\n      \"id\": \"q2\",\n      \"type\": \"multiple_choice\",\n      \"content\": \"您最常使用的功能有哪些？（可多选）\",\n      \"required\": true,\n      \"options\": [\"项目管理\", \"团队协作\", \"文档编辑\", \"数据分析\", \"文件共享\"]\n    },\n    {\n      \"id\": \"q3\",\n      \"type\": \"open_ended\",\n      \"content\": \"您对产品有什么改进建议？\",\n      \"required\": false,\n      \"max_length\": 500\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/surveys",
+              "raw": "{{base_url}}/api/surveys/create",
               "host": ["{{base_url}}"],
-              "path": ["api", "surveys"]
-            },
-            "description": "创建问卷\n\n使用 Agno Workflow:\n- 定义问卷结构\n- 准备批量投放工作流"
+              "path": ["api", "surveys", "create"]
+            }
           },
           "response": [
             {
@@ -621,42 +604,45 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"audience_ids\": [\n    \"aud-001\", \"aud-002\", \"aud-003\", \"aud-004\", \"aud-005\",\n    \"aud-006\", \"aud-007\", \"aud-008\", \"aud-009\", \"aud-010\"\n  ],\n  \"config\": {\n    \"max_concurrency\": 100,\n    \"batch_size\": 50\n  }\n}"
+              "raw": "{\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"audience_ids\": [\n    \"aud-001\", \"aud-002\", \"aud-003\", \"aud-004\", \"aud-005\"\n  ],\n  \"config\": {\n    \"max_concurrency\": 100,\n    \"batch_size\": 50\n  }\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/surveys/{{survey_id}}/deploy",
+              "raw": "{{base_url}}/api/surveys/deploy",
               "host": ["{{base_url}}"],
-              "path": ["api", "surveys", "{{survey_id}}", "deploy"]
-            },
-            "description": "批量投放问卷（异步任务）\n\n使用 Agno Workflow:\n- 批量并发投放（max_concurrency 控制）\n- 实时进度更新\n- 返回 task_id，通过轮询查询进度"
+              "path": ["api", "surveys", "deploy"]
+            }
           },
           "response": [
             {
-              "name": "投放任务创建成功",
+              "name": "任务创建",
               "status": "Accepted",
               "code": 202,
-              "body": "{\n  \"task_id\": \"task-abc123def456\",\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"total_count\": 10,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/surveys/srv-20260218-abc123/tasks/task-abc123def456\"\n}"
+              "body": "{\n  \"task_id\": \"task-abc123def456\",\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"total_count\": 5,\n  \"status\": \"processing\",\n  \"progress_url\": \"/api/surveys/tasks/query\"\n}"
             }
           ]
         },
         {
           "name": "查询投放进度",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/surveys/{{survey_id}}/tasks/{{task_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "surveys", "{{survey_id}}", "tasks", "{{task_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"task_id\": \"task-abc123def456\"\n}"
             },
-            "description": "查询投放任务进度\n\n建议轮询间隔: 1-2秒"
+            "url": {
+              "raw": "{{base_url}}/api/surveys/tasks/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "tasks", "query"]
+            }
           },
           "response": [
             {
@@ -664,89 +650,87 @@
               "status": "OK",
               "code": 200,
               "body": "{\n  \"task_id\": \"task-abc123def456\",\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"status\": \"processing\",\n  \"total_count\": 100,\n  \"completed_count\": 65,\n  \"success_count\": 63,\n  \"failed_count\": 2,\n  \"progress_percentage\": 65.0\n}"
-            },
-            {
-              "name": "已完成",
-              "status": "OK",
-              "code": 200,
-              "body": "{\n  \"task_id\": \"task-abc123def456\",\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"status\": \"completed\",\n  \"total_count\": 100,\n  \"completed_count\": 100,\n  \"success_count\": 98,\n  \"failed_count\": 2,\n  \"progress_percentage\": 100.0\n}"
             }
           ]
         },
         {
           "name": "获取问卷结果",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/surveys/{{survey_id}}/results",
-              "host": ["{{base_url}}"],
-              "path": ["api", "surveys", "{{survey_id}}", "results"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_id\": \"srv-20260218-abc123\"\n}"
             },
-            "description": "获取问卷结果和统计分析"
+            "url": {
+              "raw": "{{base_url}}/api/surveys/results/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "results", "query"]
+            }
           },
           "response": [
             {
-              "name": "问卷结果统计",
+              "name": "结果",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"total_responses\": 98,\n  \"completion_rate\": 0.98,\n  \"statistics\": {\n    \"q1\": {\n      \"非常满意\": 25,\n      \"满意\": 45,\n      \"一般\": 20,\n      \"不满意\": 6,\n      \"非常不满意\": 2\n    }\n  },\n  \"insights\": [\n    {\n      \"type\": \"pain_point\",\n      \"content\": \"用户普遍反映产品上手难度较高\",\n      \"evidence_count\": 23,\n      \"confidence\": 0.85\n    }\n  ]\n}"
+              "body": "{\n  \"survey_id\": \"srv-20260218-abc123\",\n  \"total_responses\": 98,\n  \"completion_rate\": 0.98,\n  \"statistics\": {\"q1\": {\"非常满意\": 25, \"满意\": 45, \"一般\": 20, \"不满意\": 6, \"非常不满意\": 2}},\n  \"insights\": [{\"type\": \"pain_point\", \"content\": \"用户普遍反映产品上手难度较高\", \"evidence_count\": 23, \"confidence\": 0.85}]\n}"
             }
           ]
         },
         {
           "name": "获取问卷详情",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/surveys/{{survey_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "surveys", "{{survey_id}}"]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_id\": \"srv-20260218-abc123\"\n}"
             },
-            "description": "获取问卷的详细信息"
+            "url": {
+              "raw": "{{base_url}}/api/surveys/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "detail"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         },
         {
           "name": "获取问卷列表",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/surveys?skip=0&limit=20&status=active",
-              "host": ["{{base_url}}"],
-              "path": ["api", "surveys"],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "status",
-                  "value": "active"
-                }
-              ]
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-API-Key", "value": "{{api_key}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skip\": 0,\n  \"limit\": 20,\n  \"status\": \"active\"\n}"
             },
-            "description": "获取问卷列表，支持按状态筛选"
+            "url": {
+              "raw": "{{base_url}}/api/surveys/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "list"]
+            }
           },
           "response": [
             {
-              "name": "未实现（501）",
+              "name": "未实现",
               "status": "Not Implemented",
               "code": 501,
-              "body": "{\n  \"detail\": \"端点尚未实现\"\n}"
+              "body": "{\"detail\": \"端点尚未实现\"}"
             }
           ]
         }

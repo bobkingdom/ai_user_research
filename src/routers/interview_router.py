@@ -2,19 +2,24 @@
 API 路由模块 - 1对1访谈相关 API
 使用 Claude Agent SDK + MCP Tools 实现深度访谈
 """
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-router = APIRouter(prefix="/api/interviews", tags=["1对1访谈 (Claude Agent SDK)"])
+from src.routers.deps import verify_api_key
+
+router = APIRouter(
+    prefix="/api/interviews",
+    tags=["1对1访谈 (Claude Agent SDK)"],
+    dependencies=[Depends(verify_api_key)]
+)
 
 
 # ===== Request Models =====
 
 class InterviewCreateRequest(BaseModel):
-    """创建访谈会话请求"""
     audience_id: str = Field(..., description="受众ID")
     topic: str = Field(..., description="访谈主题")
     research_objectives: List[str] = Field(default=[], description="研究目标")
@@ -25,33 +30,42 @@ class InterviewCreateRequest(BaseModel):
 
 
 class InterviewMessageRequest(BaseModel):
-    """发送访谈消息请求"""
+    interview_id: str = Field(..., description="访谈会话ID")
     message: str = Field(..., description="访谈者消息")
+
+
+class EndInterviewRequest(BaseModel):
+    interview_id: str = Field(..., description="访谈会话ID")
+
+
+class GetInterviewRequest(BaseModel):
+    interview_id: str = Field(..., description="访谈会话ID")
+
+
+class GetInterviewMessagesRequest(BaseModel):
+    interview_id: str = Field(..., description="访谈会话ID")
 
 
 # ===== Response Models =====
 
 class InterviewSession(BaseModel):
-    """访谈会话"""
     interview_id: str
     audience_id: str
     topic: str
-    status: str  # active, completed, paused
+    status: str
     opening_message: str
     created_at: datetime
 
 
 class InterviewMessage(BaseModel):
-    """访谈消息"""
     message_id: str
-    role: str  # interviewer, audience
+    role: str
     content: str
     tools_used: List[str] = []
     created_at: datetime
 
 
 class InterviewSummary(BaseModel):
-    """访谈摘要"""
     interview_id: str
     status: str
     total_rounds: int
@@ -64,7 +78,7 @@ class InterviewSummary(BaseModel):
 
 # ===== API Endpoints =====
 
-@router.post("/", response_model=InterviewSession, status_code=201)
+@router.post("/create", response_model=InterviewSession, status_code=201)
 async def create_interview(request: InterviewCreateRequest):
     """
     创建1对1访谈会话
@@ -76,15 +90,6 @@ async def create_interview(request: InterviewCreateRequest):
 
     **注意**: 此端点暂未实现，返回示例数据
     """
-    # TODO: 实现 Claude Agent SDK 访谈
-    # from src.scenarios.interview import InterviewAgent
-    # agent = InterviewAgent(
-    #     audience_id=request.audience_id,
-    #     topic=request.topic,
-    #     mcp_tools=request.mcp_tools
-    # )
-    # session = await agent.start_interview(request.research_objectives)
-
     interview_id = f"itv-{uuid.uuid4().hex[:12]}"
 
     return InterviewSession(
@@ -97,8 +102,8 @@ async def create_interview(request: InterviewCreateRequest):
     )
 
 
-@router.post("/{interview_id}/messages", response_model=InterviewMessage)
-async def send_interview_message(interview_id: str, request: InterviewMessageRequest):
+@router.post("/messages/send", response_model=InterviewMessage)
+async def send_interview_message(request: InterviewMessageRequest):
     """
     向访谈会话发送消息
 
@@ -106,11 +111,6 @@ async def send_interview_message(interview_id: str, request: InterviewMessageReq
 
     **注意**: 此端点暂未实现，返回示例回答
     """
-    # TODO: 通过 Claude Agent SDK 生成回答
-    # from src.scenarios.interview import InterviewAgent
-    # agent = InterviewAgent.get_session(interview_id)
-    # response = await agent.respond(request.message)
-
     return InterviewMessage(
         message_id=f"msg-{uuid.uuid4().hex[:8]}",
         role="audience",
@@ -120,20 +120,15 @@ async def send_interview_message(interview_id: str, request: InterviewMessageReq
     )
 
 
-@router.post("/{interview_id}/end", response_model=InterviewSummary)
-async def end_interview(interview_id: str):
+@router.post("/end", response_model=InterviewSummary)
+async def end_interview(request: EndInterviewRequest):
     """
     结束访谈会话，获取摘要和洞察
 
     **注意**: 此端点暂未实现
     """
-    # TODO: 结束访谈并生成摘要
-    # from src.scenarios.interview import InterviewAgent
-    # agent = InterviewAgent.get_session(interview_id)
-    # summary = await agent.end_interview()
-
     return InterviewSummary(
-        interview_id=interview_id,
+        interview_id=request.interview_id,
         status="completed",
         total_rounds=8,
         duration_seconds=1200,
@@ -153,27 +148,8 @@ async def end_interview(interview_id: str):
     )
 
 
-@router.websocket("/{interview_id}/ws")
-async def interview_websocket(websocket: WebSocket, interview_id: str):
-    """
-    WebSocket 实时访谈
-
-    支持实时双向对话，适合需要流式响应的场景
-
-    **注意**: 此端点暂未实现
-    """
-    await websocket.accept()
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # TODO: 通过 Claude Agent SDK 实时生成回答
-            await websocket.send_text(f"Echo: {data}")
-    except WebSocketDisconnect:
-        pass
-
-
-@router.get("/{interview_id}", response_model=InterviewSession)
-async def get_interview(interview_id: str):
+@router.post("/detail", response_model=InterviewSession)
+async def get_interview(request: GetInterviewRequest):
     """
     获取访谈会话详情
 
@@ -182,11 +158,27 @@ async def get_interview(interview_id: str):
     raise HTTPException(status_code=501, detail="端点尚未实现")
 
 
-@router.get("/{interview_id}/messages", response_model=List[InterviewMessage])
-async def get_interview_messages(interview_id: str):
+@router.post("/messages/list", response_model=List[InterviewMessage])
+async def get_interview_messages(request: GetInterviewMessagesRequest):
     """
     获取访谈消息历史
 
     **注意**: 此端点暂未实现
     """
     raise HTTPException(status_code=501, detail="端点尚未实现")
+
+
+@router.websocket("/{interview_id}/ws")
+async def interview_websocket(websocket: WebSocket, interview_id: str):
+    """
+    WebSocket 实时访谈（不需要 API Key，通过 URL 参数认证）
+
+    **注意**: 此端点暂未实现
+    """
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"Echo: {data}")
+    except WebSocketDisconnect:
+        pass

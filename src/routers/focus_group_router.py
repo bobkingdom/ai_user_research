@@ -2,19 +2,24 @@
 API 路由模块 - 焦点小组相关 API
 使用 Agno Team 实现批量并发讨论
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-router = APIRouter(prefix="/api/focus-groups", tags=["焦点小组 (Agno Team)"])
+from src.routers.deps import verify_api_key
+
+router = APIRouter(
+    prefix="/api/focus-groups",
+    tags=["焦点小组 (Agno Team)"],
+    dependencies=[Depends(verify_api_key)]
+)
 
 
 # ===== Request Models =====
 
 class FocusGroupCreateRequest(BaseModel):
-    """创建焦点小组请求"""
     title: str = Field(..., description="焦点小组标题")
     topic: str = Field(..., description="讨论主题")
     background: Optional[str] = Field(None, description="背景说明")
@@ -23,40 +28,60 @@ class FocusGroupCreateRequest(BaseModel):
 
 
 class AddParticipantsRequest(BaseModel):
-    """添加参与者请求"""
+    focus_group_id: str = Field(..., description="焦点小组ID")
     participant_ids: List[str] = Field(..., description="参与者受众ID列表")
 
 
 class BatchResponseRequest(BaseModel):
-    """批量生成回答请求"""
+    focus_group_id: str = Field(..., description="焦点小组ID")
     participant_ids: List[str] = Field(..., description="参与者ID列表")
     host_message: str = Field(..., description="主持人消息")
+
+
+class GetBatchTaskRequest(BaseModel):
+    focus_group_id: str = Field(..., description="焦点小组ID")
+    task_id: str = Field(..., description="任务ID")
+
+
+class GetActiveBatchTaskRequest(BaseModel):
+    focus_group_id: str = Field(..., description="焦点小组ID")
+
+
+class GetInsightsRequest(BaseModel):
+    focus_group_id: str = Field(..., description="焦点小组ID")
+
+
+class GetFocusGroupRequest(BaseModel):
+    focus_group_id: str = Field(..., description="焦点小组ID")
+
+
+class GetFocusGroupMessagesRequest(BaseModel):
+    focus_group_id: str = Field(..., description="焦点小组ID")
+    skip: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=200)
 
 
 # ===== Response Models =====
 
 class FocusGroup(BaseModel):
-    """焦点小组"""
     focus_group_id: str
     title: str
     topic: str
-    status: str  # draft, active, completed
+    status: str
     participant_count: int
     created_at: datetime
 
 
 class BatchResponseTask(BaseModel):
-    """批量回答任务"""
     task_id: str
     focus_group_id: str
     is_new_task: bool
     total_participants: int
-    status: str  # processing, completed, failed
+    status: str
     progress_url: str
 
 
 class ParticipantResponse(BaseModel):
-    """参与者回答"""
     participant_id: str
     success: bool
     content: Optional[str] = None
@@ -65,7 +90,6 @@ class ParticipantResponse(BaseModel):
 
 
 class BatchResponseProgress(BaseModel):
-    """批量回答进度"""
     task_id: str
     status: str
     total_count: int
@@ -77,9 +101,8 @@ class BatchResponseProgress(BaseModel):
 
 
 class Insight(BaseModel):
-    """讨论洞察"""
     insight_id: str
-    type: str  # pain_point, need, preference, behavior
+    type: str
     content: str
     confidence_score: float
     evidence: List[Dict[str, str]]
@@ -87,7 +110,6 @@ class Insight(BaseModel):
 
 
 class FocusGroupInsights(BaseModel):
-    """焦点小组洞察汇总"""
     focus_group_id: str
     total_insights: int
     insights: List[Insight]
@@ -95,7 +117,7 @@ class FocusGroupInsights(BaseModel):
 
 # ===== API Endpoints =====
 
-@router.post("/", response_model=FocusGroup, status_code=201)
+@router.post("/create", response_model=FocusGroup, status_code=201)
 async def create_focus_group(request: FocusGroupCreateRequest):
     """
     创建焦点小组
@@ -106,14 +128,6 @@ async def create_focus_group(request: FocusGroupCreateRequest):
 
     **注意**: 此端点暂未实现，返回示例数据
     """
-    # TODO: 实现 Agno Team 创建
-    # from src.workflows.focus_group import FocusGroupTeam
-    # team = FocusGroupTeam.create(
-    #     title=request.title,
-    #     topic=request.topic,
-    #     objectives=request.research_objectives
-    # )
-
     focus_group_id = f"fg-{uuid.uuid4().hex[:12]}"
 
     return FocusGroup(
@@ -126,32 +140,22 @@ async def create_focus_group(request: FocusGroupCreateRequest):
     )
 
 
-@router.post("/{focus_group_id}/participants")
-async def add_participants(focus_group_id: str, request: AddParticipantsRequest):
+@router.post("/participants/add")
+async def add_participants(request: AddParticipantsRequest):
     """
     向焦点小组添加参与者
 
     **注意**: 此端点暂未实现
     """
-    # TODO: 添加参与者到 Team
-    # from src.workflows.focus_group import FocusGroupTeam
-    # team = FocusGroupTeam.get(focus_group_id)
-    # await team.add_participants(request.participant_ids)
-
     return {
-        "focus_group_id": focus_group_id,
+        "focus_group_id": request.focus_group_id,
         "added_count": len(request.participant_ids),
         "total_participants": len(request.participant_ids)
     }
 
 
-@router.post(
-    "/{focus_group_id}/batch-responses",
-    response_model=BatchResponseTask,
-    status_code=202
-)
+@router.post("/batch-responses", response_model=BatchResponseTask, status_code=202)
 async def batch_generate_responses(
-    focus_group_id: str,
     request: BatchResponseRequest,
     background_tasks: BackgroundTasks
 ):
@@ -160,37 +164,25 @@ async def batch_generate_responses(
 
     使用 Agno Team.run_parallel():
     - 所有参与者并发回答（2μs per agent）
-    - 返回 task_id，通过轮询查询进度
+    - 返回 task_id，通过 POST /api/focus-groups/batch-tasks/query 轮询进度
     - 防止重复提交（相同请求返回已有任务）
 
     **注意**: 此端点暂未实现，返回示例任务
     """
     task_id = f"batch-task-{uuid.uuid4().hex[:8]}"
 
-    # TODO: 启动 Agno Team 批量执行
-    # background_tasks.add_task(
-    #     run_batch_responses,
-    #     focus_group_id=focus_group_id,
-    #     task_id=task_id,
-    #     participant_ids=request.participant_ids,
-    #     host_message=request.host_message
-    # )
-
     return BatchResponseTask(
         task_id=task_id,
-        focus_group_id=focus_group_id,
+        focus_group_id=request.focus_group_id,
         is_new_task=True,
         total_participants=len(request.participant_ids),
         status="processing",
-        progress_url=f"/api/focus-groups/{focus_group_id}/batch-tasks/{task_id}"
+        progress_url="/api/focus-groups/batch-tasks/query"
     )
 
 
-@router.get(
-    "/{focus_group_id}/batch-tasks/{task_id}",
-    response_model=BatchResponseProgress
-)
-async def get_batch_task_progress(focus_group_id: str, task_id: str):
+@router.post("/batch-tasks/query", response_model=BatchResponseProgress)
+async def get_batch_task_progress(request: GetBatchTaskRequest):
     """
     查询批量任务进度
 
@@ -198,12 +190,8 @@ async def get_batch_task_progress(focus_group_id: str, task_id: str):
 
     **注意**: 此端点暂未实现，返回示例进度
     """
-    # TODO: 从任务管理器获取真实进度
-    # from src.utils.task_manager import TaskManager
-    # progress = await TaskManager.get_task_progress(task_id)
-
     return BatchResponseProgress(
-        task_id=task_id,
+        task_id=request.task_id,
         status="completed",
         total_count=20,
         completed_count=20,
@@ -221,11 +209,8 @@ async def get_batch_task_progress(focus_group_id: str, task_id: str):
     )
 
 
-@router.get(
-    "/{focus_group_id}/active-batch-task",
-    response_model=Optional[BatchResponseTask]
-)
-async def get_active_batch_task(focus_group_id: str):
+@router.post("/active-batch-task/query", response_model=Optional[BatchResponseTask])
+async def get_active_batch_task(request: GetActiveBatchTaskRequest):
     """
     检查是否有正在运行的批量任务
 
@@ -233,12 +218,11 @@ async def get_active_batch_task(focus_group_id: str):
 
     **注意**: 此端点暂未实现
     """
-    # TODO: 查询活跃任务
     return None
 
 
-@router.get("/{focus_group_id}/insights", response_model=FocusGroupInsights)
-async def get_focus_group_insights(focus_group_id: str):
+@router.post("/insights/query", response_model=FocusGroupInsights)
+async def get_focus_group_insights(request: GetInsightsRequest):
     """
     获取焦点小组讨论洞察
 
@@ -246,13 +230,8 @@ async def get_focus_group_insights(focus_group_id: str):
 
     **注意**: 此端点暂未实现，返回示例洞察
     """
-    # TODO: 实现洞察提取
-    # from src.utils.insight_extractor import InsightExtractor
-    # extractor = InsightExtractor()
-    # insights = await extractor.extract(focus_group_id)
-
     return FocusGroupInsights(
-        focus_group_id=focus_group_id,
+        focus_group_id=request.focus_group_id,
         total_insights=2,
         insights=[
             Insight(
@@ -272,8 +251,8 @@ async def get_focus_group_insights(focus_group_id: str):
     )
 
 
-@router.get("/{focus_group_id}", response_model=FocusGroup)
-async def get_focus_group(focus_group_id: str):
+@router.post("/detail", response_model=FocusGroup)
+async def get_focus_group(request: GetFocusGroupRequest):
     """
     获取焦点小组详情
 
@@ -282,12 +261,8 @@ async def get_focus_group(focus_group_id: str):
     raise HTTPException(status_code=501, detail="端点尚未实现")
 
 
-@router.get("/{focus_group_id}/messages")
-async def get_focus_group_messages(
-    focus_group_id: str,
-    skip: int = 0,
-    limit: int = 50
-):
+@router.post("/messages/list")
+async def get_focus_group_messages(request: GetFocusGroupMessagesRequest):
     """
     获取焦点小组讨论消息
 
