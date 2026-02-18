@@ -153,8 +153,21 @@ async def get_config():
     }
 
 
-# 未来可在此添加更多路由
-# 例如: /api/surveys, /api/focus-groups, /api/audiences 等
+# 注册API路由
+try:
+    from src.routers.audience_router import router as audience_router
+    from src.routers.interview_router import router as interview_router
+    from src.routers.focus_group_router import router as focus_group_router
+    from src.routers.survey_router import router as survey_router
+
+    app.include_router(audience_router)
+    app.include_router(interview_router)
+    app.include_router(focus_group_router)
+    app.include_router(survey_router)
+
+    logger.info("✅ API 路由已注册")
+except ImportError as e:
+    logger.warning(f"⚠️ 部分路由注册失败: {e}")
 
 if __name__ == "__main__":
     import uvicorn

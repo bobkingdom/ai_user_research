@@ -105,6 +105,35 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000
 
 访问 http://localhost:8000/docs 查看 API 文档
 
+## 快速开始
+
+### 1. 测试核心端点
+
+```bash
+# 获取项目信息
+curl http://localhost:8000/
+
+# 健康检查
+curl http://localhost:8000/health
+
+# 查看配置
+curl http://localhost:8000/config
+```
+
+### 2. 体验四大场景
+
+访问 Swagger UI 文档：http://localhost:8000/docs
+
+在交互式文档中，你可以：
+- 创建受众画像（场景四）
+- 创建问卷并投放（场景二）
+- 创建焦点小组并运行讨论（场景三）
+- 创建1对1访谈会话（场景一）
+
+### 3. 使用 Postman 测试
+
+详细的 Postman 测试步骤请参考 [部署文档 - 测试API章节](DEPLOY.md#测试-api)
+
 ## API 端点
 
 ### 核心端点
@@ -115,12 +144,49 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000
 - `GET /docs` - Swagger UI 文档
 - `GET /redoc` - ReDoc 文档
 
-### 未来扩展
+### 场景一：1对1受众访谈（Claude Agent SDK）
 
-- `POST /api/surveys` - 创建问卷调研
-- `POST /api/focus-groups` - 创建焦点小组
-- `POST /api/audiences` - 创建受众群体
-- `GET /api/insights` - 获取研究洞察
+**框架**: Claude Agent SDK + MCP Tools
+
+- `POST /api/interviews` - 创建访谈会话
+- `POST /api/interviews/{interview_id}/messages` - 发送访谈消息
+- `POST /api/interviews/{interview_id}/end` - 结束访谈
+- `GET /api/interviews/{interview_id}` - 获取访谈会话详情
+- `GET /api/interviews/{interview_id}/messages` - 获取访谈消息历史
+
+### 场景二：问卷批量投放（Agno Teams）
+
+**框架**: Agno Framework - Teams 模式
+
+- `POST /api/surveys` - 创建问卷
+- `POST /api/surveys/{survey_id}/deploy` - 批量投放问卷（异步任务）
+- `GET /api/surveys/{survey_id}/tasks/{task_id}` - 查询投放进度
+- `GET /api/surveys/{survey_id}/results` - 获取问卷结果
+- `GET /api/surveys/{survey_id}` - 获取问卷详情
+- `GET /api/surveys` - 获取问卷列表
+
+### 场景三：焦点小组批量（Agno Workflows）
+
+**框架**: Agno Framework - Workflows 模式
+
+- `POST /api/focus-group` - 创建焦点小组
+- `POST /api/focus-group/{focus_group_id}/participants` - 添加参与者
+- `POST /api/focus-group/{focus_group_id}/batch-participant-response` - 批量生成参与者回答（异步任务）
+- `GET /api/focus-group/{focus_group_id}/batch-task/{task_id}` - 查询批量任务进度
+- `GET /api/focus-group/{focus_group_id}/active-batch-task` - 获取活跃批量任务
+- `GET /api/focus-group/{focus_group_id}/insights` - 获取洞察分析
+- `GET /api/focus-group/{focus_group_id}` - 获取焦点小组详情
+- `GET /api/focus-group/{focus_group_id}/messages` - 获取讨论消息
+
+### 场景四：受众生成流水线（SmolaAgents Manager）
+
+**框架**: SmolaAgents - Manager Pattern
+
+- `POST /api/audiences/generate` - 生成单个受众画像
+- `POST /api/audiences/batch-generate` - 批量生成受众（异步任务）
+- `GET /api/audiences/tasks/{task_id}` - 查询批量生成进度
+- `GET /api/audiences/{audience_id}` - 获取受众详情
+- `GET /api/audiences` - 获取受众列表
 
 ## 技术栈
 
