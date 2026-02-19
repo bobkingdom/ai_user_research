@@ -20,6 +20,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 项目定位
+
+**纯推理层 API（Stateless Inference API）**
+
+- 本项目定位为无状态推理服务，不连接数据库，不持久化任何数据
+- 接收请求 → 调用 Agent 框架推理 → 返回结果，数据存储由调用方负责
+- 多轮对话等需要上下文的场景，通过请求参数 `message_histories: []` 传入历史消息
+- 无状态、轻量、易于水平扩展，可被任意客户端（前端、其他后端服务）调用
+
+### 设计原则
+- **推理归推理，存储归存储** - 职责单一，不混合数据库操作
+- **上下文通过参数传递** - 不在服务端维护会话状态，所有上下文由调用方管理
+- **部署灵活** - 可独立扩缩容，不受数据库连接池等约束
+
 ## Project Overview
 
 AI-powered user research platform demonstrating three Agent frameworks (Claude Agent SDK, Agno, SmolaAgents) implementing four research scenarios.
@@ -257,16 +271,30 @@ results = await manager.execute_batch(tasks, max_concurrency=100)
 - Pydantic for all data models
 - Structured logging with logger.info/warning/error
 
-## API Endpoints
+## API 设计规范
 
-- `GET /`: Project information
-- `GET /health`: Health check (used by Render.com)
-- `GET /config`: Current configuration (non-sensitive)
+### 认证
+- 所有 `/api/*` 路由必须携带 `X-API-Key` Header
+- API Key 通过环境变量 `API_KEY` 配置
+
+### 接口风格
+- 所有业务接口统一使用 **POST** 方法（用户偏好）
+- 原本需要路径参数的查询类接口（如 GET /api/xx/{id}），改为 POST 请求体传参
+- 接口命名约定：`/create`、`/detail`、`/list`、`/query` 等动作后缀
+
+### 无状态上下文传递
+- 多轮对话场景通过 `message_histories` 参数传入完整历史消息
+- 服务端不缓存任何会话状态
+
+### 系统端点
+- `GET /`: 项目信息
+- `GET /health`: 健康检查
+- `GET /config`: 配置信息（不含敏感数据）
 - `GET /docs`: Swagger UI
-- `GET /redoc`: ReDoc documentation
 
-Future endpoints (not yet implemented):
-- `POST /api/surveys`: Create survey deployment
-- `POST /api/focus-groups`: Create focus group session
-- `POST /api/audiences`: Generate audience personas
-- `GET /api/insights`: Extract research insights
+### 业务端点（全部 POST，需 X-API-Key）
+
+**受众生成** (`/api/audiences/`): generate, batch-generate, tasks/query, detail, list
+**1对1访谈** (`/api/interviews/`): create, messages/send, end, detail, messages/list
+**焦点小组** (`/api/focus-groups/`): create, participants/add, batch-responses, batch-tasks/query, active-batch-task/query, insights/query, detail, messages/list
+**问卷投放** (`/api/surveys/`): create, deploy, tasks/query, results/query, detail, list
