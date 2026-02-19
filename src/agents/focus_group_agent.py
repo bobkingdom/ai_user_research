@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 from agno import Agent, ModelSettings
+from src.core.config import ai_config
 from src.core.models import (
     AudienceProfile,
     FocusGroupDefinition,
@@ -35,7 +36,7 @@ class FocusGroupParticipantAgent:
         self,
         audience_profile: AudienceProfile,
         focus_group: FocusGroupDefinition,
-        model_id: str = "claude-3-5-sonnet-20241022"
+        model_id: Optional[str] = None
     ):
         """
         初始化焦点小组参与者Agent
@@ -47,7 +48,8 @@ class FocusGroupParticipantAgent:
         """
         self.audience_profile = audience_profile
         self.focus_group = focus_group
-        self.model_id = model_id
+        # 使用环境变量中的模型配置
+        self.model_id = model_id or ai_config.default_model
 
         # 对话历史（用于多轮讨论的上下文）
         self.conversation_history: List[Dict[str, str]] = []
@@ -351,7 +353,7 @@ class FocusGroupModeratorAgent:
     def __init__(
         self,
         focus_group: FocusGroupDefinition,
-        model_id: str = "claude-3-5-sonnet-20241022"
+        model_id: Optional[str] = None
     ):
         """
         初始化主持人Agent
@@ -361,7 +363,8 @@ class FocusGroupModeratorAgent:
             model_id: 使用的模型ID
         """
         self.focus_group = focus_group
-        self.model_id = model_id
+        # 使用环境变量中的模型配置
+        self.model_id = model_id or ai_config.default_model
 
         # 构建系统提示词
         self.system_prompt = self._build_system_prompt()

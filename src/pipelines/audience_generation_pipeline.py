@@ -7,6 +7,7 @@ import logging
 import json
 from typing import Dict, Any, Optional
 from smolagents import ToolCallingAgent
+from src.core.config import ai_config
 from src.agents.generation_agents import create_all_generation_agents
 from src.core.models import AudienceProfile
 import uuid
@@ -37,7 +38,7 @@ class AudienceGenerationPipeline:
 
     def __init__(
         self,
-        model_id: str = "anthropic/claude-3-5-sonnet-20241022",
+        model_id: Optional[str] = None,
         max_steps: int = 15
     ):
         """
@@ -47,12 +48,13 @@ class AudienceGenerationPipeline:
             model_id: 使用的模型ID（对Manager和所有Managed Agents统一）
             max_steps: Manager Agent的最大执行步数
         """
-        self.model_id = model_id
+        # 使用环境变量中的模型配置（SmolaAgents 使用 OpenRouter 格式）
+        self.model_id = model_id or ai_config.default_smolagents_model
         self.max_steps = max_steps
 
         # 创建所有专业 Agents
-        logger.info(f"🔧 初始化受众生成流水线，使用模型: {model_id}")
-        self.managed_agents = create_all_generation_agents(model_id)
+        logger.info(f"🔧 初始化受众生成流水线，使用模型: {self.model_id}")
+        self.managed_agents = create_all_generation_agents(self.model_id)
 
         # 创建 Manager Agent
         self.manager_agent = self._create_manager_agent()

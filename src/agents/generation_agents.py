@@ -4,7 +4,9 @@
 """
 
 import logging
+from typing import Optional
 from smolagents import ToolCallingAgent, ManagedAgent
+from src.core.config import ai_config
 from src.tools.audience_tools import (
     generate_demographics,
     generate_personality,
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ==================== 专业 Agent 定义 ====================
 
 
-def create_demographics_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -> ManagedAgent:
+def create_demographics_agent(model_id: Optional[str] = None) -> ManagedAgent:
     """
     创建基础信息生成 Agent
 
@@ -34,9 +36,11 @@ def create_demographics_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241
     Returns:
         ManagedAgent: 配置好的基础信息生成代理
     """
+    # 使用环境变量中的模型配置（SmolaAgents 使用 OpenRouter 格式）
+    actual_model_id = model_id or ai_config.default_smolagents_model
     base_agent = ToolCallingAgent(
         tools=[generate_demographics],
-        model=model_id,
+        model=actual_model_id,
         max_steps=3
     )
 
@@ -50,7 +54,7 @@ def create_demographics_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241
     return managed_agent
 
 
-def create_personality_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -> ManagedAgent:
+def create_personality_agent(model_id: Optional[str] = None) -> ManagedAgent:
     """
     创建人格特征生成 Agent
 
@@ -66,9 +70,10 @@ def create_personality_agent(model_id: str = "anthropic/claude-3-5-sonnet-202410
     Returns:
         ManagedAgent: 配置好的人格特征生成代理
     """
+    actual_model_id = model_id or ai_config.default_smolagents_model
     base_agent = ToolCallingAgent(
         tools=[generate_personality],
-        model=model_id,
+        model=actual_model_id,
         max_steps=3
     )
 
@@ -82,7 +87,7 @@ def create_personality_agent(model_id: str = "anthropic/claude-3-5-sonnet-202410
     return managed_agent
 
 
-def create_lifestyle_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -> ManagedAgent:
+def create_lifestyle_agent(model_id: Optional[str] = None) -> ManagedAgent:
     """
     创建生活方式生成 Agent
 
@@ -98,9 +103,10 @@ def create_lifestyle_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022
     Returns:
         ManagedAgent: 配置好的生活方式生成代理
     """
+    actual_model_id = model_id or ai_config.default_smolagents_model
     base_agent = ToolCallingAgent(
         tools=[generate_lifestyle],
-        model=model_id,
+        model=actual_model_id,
         max_steps=3
     )
 
@@ -114,7 +120,7 @@ def create_lifestyle_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022
     return managed_agent
 
 
-def create_validation_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -> ManagedAgent:
+def create_validation_agent(model_id: Optional[str] = None) -> ManagedAgent:
     """
     创建数据验证 Agent
 
@@ -130,9 +136,10 @@ def create_validation_agent(model_id: str = "anthropic/claude-3-5-sonnet-2024102
     Returns:
         ManagedAgent: 配置好的数据验证代理
     """
+    actual_model_id = model_id or ai_config.default_smolagents_model
     base_agent = ToolCallingAgent(
         tools=[validate_audience_profile],
-        model=model_id,
+        model=actual_model_id,
         max_steps=2
     )
 
@@ -146,7 +153,7 @@ def create_validation_agent(model_id: str = "anthropic/claude-3-5-sonnet-2024102
     return managed_agent
 
 
-def create_merge_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -> ManagedAgent:
+def create_merge_agent(model_id: Optional[str] = None) -> ManagedAgent:
     """
     创建数据整合 Agent
 
@@ -160,9 +167,10 @@ def create_merge_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -
     Returns:
         ManagedAgent: 配置好的数据整合代理
     """
+    actual_model_id = model_id or ai_config.default_smolagents_model
     base_agent = ToolCallingAgent(
         tools=[merge_audience_data],
-        model=model_id,
+        model=actual_model_id,
         max_steps=2
     )
 
@@ -179,7 +187,7 @@ def create_merge_agent(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -
 # ==================== Agent 工厂函数 ====================
 
 
-def create_all_generation_agents(model_id: str = "anthropic/claude-3-5-sonnet-20241022") -> dict:
+def create_all_generation_agents(model_id: Optional[str] = None) -> dict:
     """
     创建所有受众生成专业 Agents
 

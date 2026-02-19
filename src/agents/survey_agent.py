@@ -10,6 +10,7 @@ from datetime import datetime
 
 from agno import Agent, ModelSettings
 from src.core.models import AudienceProfile, SurveyDefinition, SurveyResponse
+from src.core.config import ai_config
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class SurveyAgent:
     def __init__(
         self,
         audience_profile: AudienceProfile,
-        model_id: str = "claude-3-5-sonnet-20241022"
+        model_id: Optional[str] = None
     ):
         """
         初始化问卷回答Agent
@@ -38,7 +39,8 @@ class SurveyAgent:
             model_id: 使用的模型ID
         """
         self.audience_profile = audience_profile
-        self.model_id = model_id
+        # 使用环境变量中的模型配置，如果没有指定则使用默认模型
+        self.model_id = model_id or ai_config.default_model
         
         # 构建系统提示词
         self.system_prompt = self._build_system_prompt()

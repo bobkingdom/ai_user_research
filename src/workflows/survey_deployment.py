@@ -10,6 +10,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from agno import Team
+from src.core.config import ai_config
 from src.core.models import SurveyDefinition, AudienceProfile, SurveyResponse, DeploymentResult
 from src.agents.survey_agent import SurveyAgent
 from src.utils.concurrency import ConcurrencyManager
@@ -32,7 +33,7 @@ class SurveyDeployment:
     def __init__(
         self,
         max_concurrency: Optional[int] = None,
-        model_id: str = "claude-3-5-sonnet-20241022"
+        model_id: Optional[str] = None
     ):
         """
         初始化问卷投放编排器
@@ -44,9 +45,10 @@ class SurveyDeployment:
         self.concurrency_manager = ConcurrencyManager.for_survey()
         if max_concurrency:
             self.concurrency_manager.max_concurrency = max_concurrency
-            
+
         self.task_manager = TaskManager()
-        self.model_id = model_id
+        # 使用环境变量中的模型配置
+        self.model_id = model_id or ai_config.default_model
         
         logger.info(
             f"SurveyDeployment 初始化: max_concurrency={self.concurrency_manager.max_concurrency}, "
