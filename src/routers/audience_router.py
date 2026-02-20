@@ -9,6 +9,13 @@ from datetime import datetime
 import uuid
 
 from src.routers.deps import verify_api_key
+from src.core.models import (
+    AudienceProfile,
+    AudienceSegment,
+    IntentAnalysis,
+    GenerationTask,
+    GenerationStatus,
+)
 
 router = APIRouter(
     prefix="/api/audiences",
@@ -21,6 +28,7 @@ router = APIRouter(
 
 class AudienceGenerateRequest(BaseModel):
     description: str = Field(..., description="受众描述，如：35岁互联网产品经理")
+    segment: Optional[AudienceSegment] = Field(None, description="受众细分（可选，由意图分析自动生成）")
     generation_config: Optional[Dict[str, Any]] = Field(
         default={
             "model": "claude-3-5-sonnet",
@@ -32,6 +40,7 @@ class AudienceGenerateRequest(BaseModel):
 
 class BatchAudienceGenerateRequest(BaseModel):
     descriptions: List[str] = Field(..., description="受众描述列表")
+    segments: Optional[List[AudienceSegment]] = Field(None, description="受众细分列表")
     concurrency: int = Field(default=5, ge=1, le=20, description="并发数")
     generation_config: Optional[Dict[str, Any]] = None
 
@@ -52,18 +61,13 @@ class ListAudiencesRequest(BaseModel):
 
 # ===== Response Models =====
 
-class AudienceProfile(BaseModel):
-    audience_id: str
-    name: str
-    demographics: Dict[str, Any]
-    professional: Dict[str, Any]
-    personality: Dict[str, Any]
-    lifestyle: Dict[str, Any]
-    match_score: float = Field(..., ge=0, le=1)
-    created_at: datetime
+class AudienceGenerateResponse(BaseModel):
+    audience: AudienceProfile
+    intent_analysis: Optional[IntentAnalysis] = None
+    segment: Optional[AudienceSegment] = None
 
 
-class BatchGenerationTask(BaseModel):
+class BatchGenerationTaskResponse(BaseModel):
     task_id: str
     total_count: int
     status: str
@@ -83,50 +87,47 @@ class BatchGenerationProgress(BaseModel):
 
 # ===== API Endpoints =====
 
-@router.post("/generate", response_model=AudienceProfile, status_code=201)
+@router.post("/generate", response_model=AudienceGenerateResponse, status_code=201)
 async def generate_audience(request: AudienceGenerateRequest):
     """
     生成单个受众画像
 
     使用 SmolaAgents Manager 模式：
-    - IntentAnalyzer: 分析描述意图
-    - PersonaGenerator: 生成人格特征
-    - AudienceGenerator: 组装完整画像
+    1. IntentAnalysis: 分析描述意图
+    2. AudienceSegment: 生成细分
+    3. AudienceProfile + Personality: 生成完整画像
 
     **注意**: 此端点暂未实现，返回示例数据
     """
     # TODO: 实现 SmolaAgents 流水线
-    return AudienceProfile(
-        audience_id=f"aud-{uuid.uuid4().hex[:12]}",
+    from src.core.models import Personality
+
+    profile = AudienceProfile(
+        user_id=str(uuid.uuid4()),
         name="张明（示例）",
-        demographics={
-            "age": 35,
-            "gender": "男",
-            "location": "北京",
-            "education": "本科",
-            "income_level": "20-30万"
-        },
-        professional={
-            "industry": "互联网",
-            "position": "产品经理",
-            "company_size": "500-1000人",
-            "work_experience": 8
-        },
-        personality={
-            "personality_type": "INTJ",
-            "communication_style": "直接、逻辑性强",
-            "core_traits": ["追求效率", "注重细节", "独立思考"]
-        },
-        lifestyle={
-            "hobbies": ["阅读", "跑步", "科技产品"],
-            "values": ["效率", "创新", "专业"]
-        },
-        match_score=0.95,
-        created_at=datetime.utcnow()
+        age=35,
+        gender="男",
+        location="北京",
+        education="本科",
+        income_level="20-30万",
+        industry="互联网",
+        position="产品经理",
+        company_size="500-1000人",
+        work_experience=8,
+        hobbies=["阅读", "跑步", "科技产品"],
+        brand_preferences=["Apple", "Tesla"],
+        values=["效率", "创新", "专业"],
+        personality=Personality(
+            personality_type="INTJ",
+            communication_style="直接、逻辑性强",
+            core_traits=["追求效率", "注重细节", "独立思考"],
+        ),
     )
 
+    return AudienceGenerateResponse(audience=profile)
 
-@router.post("/batch-generate", response_model=BatchGenerationTask, status_code=202)
+
+@router.post("/batch-generate", response_model=BatchGenerationTaskResponse, status_code=202)
 async def batch_generate_audiences(
     request: BatchAudienceGenerateRequest,
     background_tasks: BackgroundTasks
@@ -140,11 +141,11 @@ async def batch_generate_audiences(
     """
     task_id = f"gen-task-{uuid.uuid4().hex[:12]}"
 
-    return BatchGenerationTask(
+    return BatchGenerationTaskResponse(
         task_id=task_id,
         total_count=len(request.descriptions),
         status="processing",
-        progress_url=f"/api/audiences/tasks/query"
+        progress_url="/api/audiences/tasks/query"
     )
 
 

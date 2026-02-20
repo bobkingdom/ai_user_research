@@ -185,7 +185,7 @@ class SurveyDeployment:
             await self.task_manager.update_task_status(
                 task_key=task_id,
                 status="completed",
-                result=deployment_result.to_dict()
+                result=deployment_result.model_dump()
             )
             
             logger.info(

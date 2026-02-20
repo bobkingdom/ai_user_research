@@ -293,7 +293,7 @@ def create_segment_from_description(
     name: str,
     description: str,
     target_count: int,
-    demographics: Optional[Dict[str, Any]] = None
+    portrait: Optional[Dict[str, Any]] = None
 ) -> AudienceSegment:
     """
     从描述创建受众分群
@@ -302,7 +302,7 @@ def create_segment_from_description(
         name: 分群名称
         description: 受众描述
         target_count: 目标生成数量
-        demographics: 可选的人口统计筛选条件
+        portrait: 可选的画像数据JSON
 
     Returns:
         AudienceSegment: 受众分群对象
@@ -313,7 +313,7 @@ def create_segment_from_description(
         name=name,
         description=description,
         target_count=target_count,
-        demographics=demographics or {}
+        portrait=portrait
     )
 
 
@@ -348,7 +348,7 @@ def print_generation_summary(task: GenerationTask) -> None:
         print("\n📝 生成受众样例（前3个）:")
         for i, profile in enumerate(task.generated_profiles[:3]):
             print(f"\n[{i+1}] {profile.name}")
-            print(f"  - 年龄: {profile.demographics.get('age', 'N/A')}")
-            print(f"  - 职位: {profile.professional.get('position', 'N/A')}")
-            print(f"  - 人格类型: {profile.personality.get('personality_type', 'N/A')}")
+            print(f"  - 年龄: {profile.age}")
+            print(f"  - 职位: {profile.position}")
+            print(f"  - 人格类型: {profile.personality.personality_type if profile.personality else 'N/A'}")
         print()

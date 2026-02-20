@@ -9,6 +9,14 @@ from datetime import datetime
 import uuid
 
 from src.routers.deps import verify_api_key
+from src.core.models import (
+    AudienceProfile,
+    SurveyDefinition,
+    SurveyQuestion,
+    SurveyResponse,
+    DeploymentResult,
+    QuestionType,
+)
 
 router = APIRouter(
     prefix="/api/surveys",
@@ -19,24 +27,16 @@ router = APIRouter(
 
 # ===== Request Models =====
 
-class Question(BaseModel):
-    id: str
-    type: str
-    content: str
-    required: bool = True
-    options: Optional[List[str]] = None
-    max_length: Optional[int] = None
-
-
 class SurveyCreateRequest(BaseModel):
     title: str = Field(..., description="问卷标题")
     description: Optional[str] = Field(None, description="问卷描述")
-    questions: List[Question] = Field(..., description="问题列表")
+    questions: List[SurveyQuestion] = Field(..., description="问题列表（复用核心模型）")
 
 
 class SurveyDeployRequest(BaseModel):
     survey_id: str = Field(..., description="问卷ID")
-    audience_ids: List[str] = Field(..., description="受众ID列表")
+    survey: Optional[SurveyDefinition] = Field(None, description="问卷定义（无状态模式直接传入）")
+    audiences: List[AudienceProfile] = Field(..., description="受众画像列表")
     config: Optional[Dict[str, Any]] = Field(
         default={
             "max_concurrency": 100,
@@ -67,7 +67,7 @@ class ListSurveysRequest(BaseModel):
 
 # ===== Response Models =====
 
-class Survey(BaseModel):
+class SurveyResponse_(BaseModel):
     survey_id: str
     title: str
     description: Optional[str]
@@ -95,7 +95,7 @@ class DeploymentProgress(BaseModel):
     progress_percentage: float
 
 
-class SurveyResults(BaseModel):
+class SurveyResultsResponse(BaseModel):
     survey_id: str
     total_responses: int
     completion_rate: float
@@ -105,7 +105,7 @@ class SurveyResults(BaseModel):
 
 # ===== API Endpoints =====
 
-@router.post("/create", response_model=Survey, status_code=201)
+@router.post("/create", response_model=SurveyResponse_, status_code=201)
 async def create_survey(request: SurveyCreateRequest):
     """
     创建问卷
@@ -118,7 +118,7 @@ async def create_survey(request: SurveyCreateRequest):
     """
     survey_id = f"srv-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6]}"
 
-    return Survey(
+    return SurveyResponse_(
         survey_id=survey_id,
         title=request.title,
         description=request.description,
@@ -148,7 +148,7 @@ async def deploy_survey(
     return SurveyDeploymentTask(
         task_id=task_id,
         survey_id=request.survey_id,
-        total_count=len(request.audience_ids),
+        total_count=len(request.audiences),
         status="processing",
         progress_url="/api/surveys/tasks/query"
     )
@@ -175,14 +175,14 @@ async def get_deployment_progress(request: GetDeploymentProgressRequest):
     )
 
 
-@router.post("/results/query", response_model=SurveyResults)
+@router.post("/results/query", response_model=SurveyResultsResponse)
 async def get_survey_results(request: GetSurveyResultsRequest):
     """
     获取问卷结果和统计分析
 
     **注意**: 此端点暂未实现，返回示例结果
     """
-    return SurveyResults(
+    return SurveyResultsResponse(
         survey_id=request.survey_id,
         total_responses=98,
         completion_rate=0.98,
@@ -206,7 +206,7 @@ async def get_survey_results(request: GetSurveyResultsRequest):
     )
 
 
-@router.post("/detail", response_model=Survey)
+@router.post("/detail", response_model=SurveyResponse_)
 async def get_survey(request: GetSurveyRequest):
     """
     获取问卷详情
@@ -216,7 +216,7 @@ async def get_survey(request: GetSurveyRequest):
     raise HTTPException(status_code=501, detail="端点尚未实现")
 
 
-@router.post("/list", response_model=List[Survey])
+@router.post("/list", response_model=List[SurveyResponse_])
 async def list_surveys(request: ListSurveysRequest):
     """
     获取问卷列表

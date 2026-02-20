@@ -9,6 +9,15 @@ from datetime import datetime
 import uuid
 
 from src.routers.deps import verify_api_key
+from src.core.models import (
+    AudienceProfile,
+    FocusGroupDefinition,
+    FocusGroupSession,
+    FocusGroupMessage,
+    FocusGroupParticipant,
+    FocusGroupStatus,
+    ParticipantRole,
+)
 
 router = APIRouter(
     prefix="/api/focus-groups",
@@ -24,18 +33,20 @@ class FocusGroupCreateRequest(BaseModel):
     topic: str = Field(..., description="讨论主题")
     background: Optional[str] = Field(None, description="背景说明")
     research_objectives: List[str] = Field(default=[], description="研究目标")
-    participant_count: int = Field(default=20, ge=5, le=50, description="参与者数量")
+    participants: Optional[List[AudienceProfile]] = Field(None, description="参与者画像列表（无状态模式直接传入）")
+    max_rounds: int = Field(default=5, ge=1, le=20, description="最大讨论轮数")
 
 
 class AddParticipantsRequest(BaseModel):
     focus_group_id: str = Field(..., description="焦点小组ID")
-    participant_ids: List[str] = Field(..., description="参与者受众ID列表")
+    participants: List[AudienceProfile] = Field(..., description="参与者画像列表")
 
 
 class BatchResponseRequest(BaseModel):
     focus_group_id: str = Field(..., description="焦点小组ID")
-    participant_ids: List[str] = Field(..., description="参与者ID列表")
+    participants: List[AudienceProfile] = Field(..., description="参与者画像列表")
     host_message: str = Field(..., description="主持人消息")
+    message_histories: List[Dict[str, Any]] = Field(default=[], description="历史消息")
 
 
 class GetBatchTaskRequest(BaseModel):
@@ -63,7 +74,7 @@ class GetFocusGroupMessagesRequest(BaseModel):
 
 # ===== Response Models =====
 
-class FocusGroup(BaseModel):
+class FocusGroupResponse(BaseModel):
     focus_group_id: str
     title: str
     topic: str
@@ -81,7 +92,7 @@ class BatchResponseTask(BaseModel):
     progress_url: str
 
 
-class ParticipantResponse(BaseModel):
+class ParticipantResponseItem(BaseModel):
     participant_id: str
     success: bool
     content: Optional[str] = None
@@ -97,7 +108,7 @@ class BatchResponseProgress(BaseModel):
     success_count: int
     failed_count: int
     progress_percentage: float
-    results: List[ParticipantResponse] = []
+    results: List[ParticipantResponseItem] = []
 
 
 class Insight(BaseModel):
@@ -109,7 +120,7 @@ class Insight(BaseModel):
     created_at: datetime
 
 
-class FocusGroupInsights(BaseModel):
+class FocusGroupInsightsResponse(BaseModel):
     focus_group_id: str
     total_insights: int
     insights: List[Insight]
@@ -117,7 +128,7 @@ class FocusGroupInsights(BaseModel):
 
 # ===== API Endpoints =====
 
-@router.post("/create", response_model=FocusGroup, status_code=201)
+@router.post("/create", response_model=FocusGroupResponse, status_code=201)
 async def create_focus_group(request: FocusGroupCreateRequest):
     """
     创建焦点小组
@@ -130,12 +141,12 @@ async def create_focus_group(request: FocusGroupCreateRequest):
     """
     focus_group_id = f"fg-{uuid.uuid4().hex[:12]}"
 
-    return FocusGroup(
+    return FocusGroupResponse(
         focus_group_id=focus_group_id,
         title=request.title,
         topic=request.topic,
         status="draft",
-        participant_count=0,
+        participant_count=len(request.participants) if request.participants else 0,
         created_at=datetime.utcnow()
     )
 
@@ -149,8 +160,8 @@ async def add_participants(request: AddParticipantsRequest):
     """
     return {
         "focus_group_id": request.focus_group_id,
-        "added_count": len(request.participant_ids),
-        "total_participants": len(request.participant_ids)
+        "added_count": len(request.participants),
+        "total_participants": len(request.participants)
     }
 
 
@@ -175,7 +186,7 @@ async def batch_generate_responses(
         task_id=task_id,
         focus_group_id=request.focus_group_id,
         is_new_task=True,
-        total_participants=len(request.participant_ids),
+        total_participants=len(request.participants),
         status="processing",
         progress_url="/api/focus-groups/batch-tasks/query"
     )
@@ -199,7 +210,7 @@ async def get_batch_task_progress(request: GetBatchTaskRequest):
         failed_count=1,
         progress_percentage=100.0,
         results=[
-            ParticipantResponse(
+            ParticipantResponseItem(
                 participant_id="aud-101",
                 success=True,
                 content="我家里有小米的智能音箱和智能灯泡，使用体验整体不错...",
@@ -221,7 +232,7 @@ async def get_active_batch_task(request: GetActiveBatchTaskRequest):
     return None
 
 
-@router.post("/insights/query", response_model=FocusGroupInsights)
+@router.post("/insights/query", response_model=FocusGroupInsightsResponse)
 async def get_focus_group_insights(request: GetInsightsRequest):
     """
     获取焦点小组讨论洞察
@@ -230,7 +241,7 @@ async def get_focus_group_insights(request: GetInsightsRequest):
 
     **注意**: 此端点暂未实现，返回示例洞察
     """
-    return FocusGroupInsights(
+    return FocusGroupInsightsResponse(
         focus_group_id=request.focus_group_id,
         total_insights=2,
         insights=[
@@ -251,7 +262,7 @@ async def get_focus_group_insights(request: GetInsightsRequest):
     )
 
 
-@router.post("/detail", response_model=FocusGroup)
+@router.post("/detail", response_model=FocusGroupResponse)
 async def get_focus_group(request: GetFocusGroupRequest):
     """
     获取焦点小组详情
@@ -261,7 +272,7 @@ async def get_focus_group(request: GetFocusGroupRequest):
     raise HTTPException(status_code=501, detail="端点尚未实现")
 
 
-@router.post("/messages/list")
+@router.post("/messages/list", response_model=List[FocusGroupMessage])
 async def get_focus_group_messages(request: GetFocusGroupMessagesRequest):
     """
     获取焦点小组讨论消息

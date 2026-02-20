@@ -24,12 +24,6 @@ class FocusGroupParticipantAgent:
     """
     焦点小组参与者代理
     作为Agno Team的成员，基于受众画像参与焦点小组讨论
-
-    架构：
-    - 使用 agno.Agent 作为基础
-    - system_prompt 包含受众完整画像和对话风格指南
-    - 每轮问题独立回答，保持人设一致性
-    - 支持多轮讨论，可参考历史对话上下文
     """
 
     def __init__(
@@ -38,26 +32,14 @@ class FocusGroupParticipantAgent:
         focus_group: FocusGroupDefinition,
         model_id: Optional[str] = None
     ):
-        """
-        初始化焦点小组参与者Agent
-
-        Args:
-            audience_profile: 受众画像数据
-            focus_group: 焦点小组定义
-            model_id: 使用的模型ID
-        """
         self.audience_profile = audience_profile
         self.focus_group = focus_group
-        # 使用环境变量中的模型配置
         self.model_id = model_id or ai_config.default_model
 
-        # 对话历史（用于多轮讨论的上下文）
         self.conversation_history: List[Dict[str, str]] = []
 
-        # 构建系统提示词
         self.system_prompt = self._build_system_prompt()
 
-        # 创建 Agno Agent
         self.agent = Agent(
             name=f"focus_group_participant_{audience_profile.user_id}",
             model=ModelSettings(id=model_id),
@@ -71,46 +53,20 @@ class FocusGroupParticipantAgent:
         )
 
     def _build_system_prompt(self) -> str:
-        """
-        构建系统提示词
-        复用 backhour_ai 的对话风格指南，专注于焦点小组讨论场景
-        """
         profile = self.audience_profile
-        demo = profile.demographics
-        prof = profile.professional
-        pers = profile.personality
-        life = profile.lifestyle
+        p = profile.personality
 
-        # 基础信息
-        age = demo.get("age", "未知")
-        gender = demo.get("gender", "未知")
-        location = demo.get("location", "未知")
-        education = demo.get("education", "未知")
-        income_level = demo.get("income_level", "未知")
+        personality_type = p.personality_type if p else "未知"
+        communication_style = p.communication_style if p else "未知"
+        core_traits = ", ".join(p.core_traits) if p and p.core_traits else ""
+        key_strengths = ", ".join(p.key_strengths) if p and p.key_strengths else ""
+        key_weaknesses = ", ".join(p.key_weaknesses) if p and p.key_weaknesses else ""
+        behavioral_patterns = ", ".join(p.behavioral_patterns) if p and p.behavioral_patterns else ""
 
-        # 职业信息
-        industry = prof.get("industry", "未知")
-        position = prof.get("position", "未知")
-        company_size = prof.get("company_size", "未知")
-        work_experience = prof.get("work_experience", 0)
-        career_goals = prof.get("career_goals", "未知")
+        hobbies = ", ".join(profile.hobbies) if profile.hobbies else ""
+        values = ", ".join(profile.values) if profile.values else ""
+        brand_preferences = ", ".join(profile.brand_preferences) if profile.brand_preferences else ""
 
-        # 人格特征
-        personality_type = pers.get("personality_type", "未知")
-        communication_style = pers.get("communication_style", "未知")
-        core_traits = ", ".join(pers.get("core_traits", []))
-        key_strengths = ", ".join(pers.get("key_strengths", []))
-        key_weaknesses = ", ".join(pers.get("key_weaknesses", []))
-        behavioral_patterns = ", ".join(pers.get("behavioral_patterns", []))
-
-        # 生活方式
-        hobbies = ", ".join(life.get("hobbies", []))
-        values = ", ".join(life.get("values", []))
-        brand_preferences = ", ".join(life.get("brand_preferences", []))
-        media_consumption = life.get("media_consumption", "未知")
-        decision_making_style = life.get("decision_making_style", "未知")
-
-        # 焦点小组上下文
         fg = self.focus_group
         research_objectives = "\n".join([f"- {obj}" for obj in fg.research_objectives])
 
@@ -125,14 +81,14 @@ class FocusGroupParticipantAgent:
 ## Your Profile
 
 ### Basic Information
-- Age: {age}
-- Gender: {gender}
-- Position: {position} ({work_experience} years of experience)
-- Company size: {company_size}
-- Location: {location}
-- Industry: {industry}
-- Education: {education}
-- Income level: {income_level}
+- Age: {profile.age}
+- Gender: {profile.gender}
+- Position: {profile.position} ({profile.work_experience} years of experience)
+- Company size: {profile.company_size}
+- Location: {profile.location}
+- Industry: {profile.industry}
+- Education: {profile.education}
+- Income level: {profile.income_level}
 
 ### Personality Characteristics
 - Personality Type: {personality_type}
@@ -143,14 +99,14 @@ class FocusGroupParticipantAgent:
 - Behavioral Patterns: {behavioral_patterns}
 
 ### Life Experiences
-- Career Development: {work_experience} years in {industry}, {career_goals}
-- Decision Style: {decision_making_style}
+- Career Development: {profile.work_experience} years in {profile.industry}, {profile.career_goals}
+- Decision Style: {profile.decision_making_style}
 
 ### Interests and Preferences
 - Hobbies: {hobbies}
 - Brand Preferences: {brand_preferences}
 - Core Values: {values}
-- Media Preference: {media_consumption}
+- Media Preference: {profile.media_consumption}
 
 ## Discussion Response Guidelines
 
@@ -201,28 +157,17 @@ Remember: You are {profile.name}. Respond authentically as yourself in this focu
         return prompt
 
     def _build_discussion_context(self, previous_responses: Optional[List[FocusGroupMessage]] = None) -> str:
-        """
-        构建讨论上下文，包含其他参与者的回答（如果有）
-
-        Args:
-            previous_responses: 本轮其他参与者的回答（可选）
-
-        Returns:
-            上下文字符串
-        """
         context = ""
 
-        # 添加本Agent的历史对话
         if self.conversation_history:
             context += "## Your Previous Responses in This Discussion\n"
-            for entry in self.conversation_history[-5:]:  # 最多保留最近5轮
+            for entry in self.conversation_history[-5:]:
                 context += f"Q: {entry['question']}\n"
                 context += f"Your response: {entry['response']}\n\n"
 
-        # 添加其他参与者的回答（同轮次）
         if previous_responses:
             context += "## Other Participants' Responses (Current Round)\n"
-            for msg in previous_responses[:5]:  # 最多显示5个其他参与者的回答
+            for msg in previous_responses[:5]:
                 context += f"- Another participant said: {msg.content}\n"
             context += "\n"
 
@@ -235,18 +180,6 @@ Remember: You are {profile.name}. Respond authentically as yourself in this focu
         previous_responses: Optional[List[FocusGroupMessage]] = None,
         participant_id: Optional[str] = None
     ) -> FocusGroupMessage:
-        """
-        响应主持人的问题
-
-        Args:
-            question: 主持人提出的问题
-            round_number: 当前轮次
-            previous_responses: 其他参与者的回答（可选，用于构建讨论上下文）
-            participant_id: 参与者ID（可选）
-
-        Returns:
-            FocusGroupMessage: 参与者的回答消息
-        """
         start_time = datetime.now()
 
         logger.info(
@@ -255,7 +188,6 @@ Remember: You are {profile.name}. Respond authentically as yourself in this focu
         )
 
         try:
-            # 构建完整提示
             context = self._build_discussion_context(previous_responses)
 
             full_prompt = f"""{context}
@@ -265,23 +197,18 @@ The moderator asks: "{question}"
 
 Please respond to this question based on your background and experiences. Be authentic, specific, and concise."""
 
-            # 调用 Agent
             response = await self.agent.arun(full_prompt)
 
-            # 解析响应
             response_text = response.content if hasattr(response, 'content') else str(response)
             response_text = response_text.strip()
 
-            # 记录到对话历史
             self.conversation_history.append({
                 "question": question,
                 "response": response_text,
                 "round": round_number
             })
 
-            # 创建消息对象
             message = FocusGroupMessage(
-                message_id="",  # 由 __post_init__ 自动生成
                 focus_group_id=self.focus_group.focus_group_id,
                 participant_id=participant_id or self.audience_profile.user_id,
                 role=ParticipantRole.PARTICIPANT,
@@ -305,9 +232,7 @@ Please respond to this question based on your background and experiences. Be aut
             logger.error(
                 f"Participant {self.audience_profile.name} failed to respond: {str(e)}"
             )
-            # 返回错误消息
             return FocusGroupMessage(
-                message_id="",
                 focus_group_id=self.focus_group.focus_group_id,
                 participant_id=participant_id or self.audience_profile.user_id,
                 role=ParticipantRole.PARTICIPANT,
@@ -321,21 +246,20 @@ Please respond to this question based on your background and experiences. Be aut
             )
 
     def reset_conversation_history(self) -> None:
-        """重置对话历史"""
         self.conversation_history = []
         logger.debug(f"Reset conversation history for {self.audience_profile.name}")
 
     def get_profile_summary(self) -> Dict[str, Any]:
-        """获取参与者画像摘要"""
+        p = self.audience_profile.personality
         return {
             "user_id": self.audience_profile.user_id,
             "name": self.audience_profile.name,
-            "age": self.audience_profile.demographics.get("age"),
-            "gender": self.audience_profile.demographics.get("gender"),
-            "industry": self.audience_profile.professional.get("industry"),
-            "position": self.audience_profile.professional.get("position"),
-            "personality_type": self.audience_profile.personality.get("personality_type"),
-            "communication_style": self.audience_profile.personality.get("communication_style")
+            "age": self.audience_profile.age,
+            "gender": self.audience_profile.gender,
+            "industry": self.audience_profile.industry,
+            "position": self.audience_profile.position,
+            "personality_type": p.personality_type if p else None,
+            "communication_style": p.communication_style if p else None
         }
 
 
@@ -343,11 +267,6 @@ class FocusGroupModeratorAgent:
     """
     焦点小组主持人代理
     负责引导讨论、提出问题、总结洞察
-
-    架构：
-    - 使用 agno.Agent 作为基础
-    - 支持SPIN问题框架
-    - 可根据讨论进展动态调整问题
     """
 
     def __init__(
@@ -355,21 +274,11 @@ class FocusGroupModeratorAgent:
         focus_group: FocusGroupDefinition,
         model_id: Optional[str] = None
     ):
-        """
-        初始化主持人Agent
-
-        Args:
-            focus_group: 焦点小组定义
-            model_id: 使用的模型ID
-        """
         self.focus_group = focus_group
-        # 使用环境变量中的模型配置
         self.model_id = model_id or ai_config.default_model
 
-        # 构建系统提示词
         self.system_prompt = self._build_system_prompt()
 
-        # 创建 Agno Agent
         self.agent = Agent(
             name=f"focus_group_moderator_{focus_group.focus_group_id}",
             model=ModelSettings(id=model_id),
@@ -377,17 +286,14 @@ class FocusGroupModeratorAgent:
             markdown=False
         )
 
-        # 讨论历史
         self.discussion_history: List[Dict[str, Any]] = []
 
         logger.debug(f"创建FocusGroupModeratorAgent: focus_group={focus_group.focus_group_id}")
 
     def _build_system_prompt(self) -> str:
-        """构建主持人系统提示词"""
         fg = self.focus_group
         research_objectives = "\n".join([f"- {obj}" for obj in fg.research_objectives])
 
-        # 格式化预设问题
         preset_questions = ""
         if fg.questions:
             preset_questions = "\n### Preset Questions (SPIN Framework)\n"
@@ -452,19 +358,8 @@ For insights, use structured format when requested."""
         round_number: int,
         previous_round_summary: Optional[str] = None
     ) -> str:
-        """
-        生成本轮讨论问题
-
-        Args:
-            round_number: 当前轮次
-            previous_round_summary: 上一轮讨论摘要（可选）
-
-        Returns:
-            str: 主持人的问题
-        """
         fg = self.focus_group
 
-        # 检查是否有预设问题
         if fg.questions and round_number <= len(fg.questions):
             preset_q = fg.questions[round_number - 1]
             question = preset_q.get("question", "")
@@ -472,7 +367,6 @@ For insights, use structured format when requested."""
                 logger.info(f"Using preset question for round {round_number}: {question[:50]}...")
                 return question
 
-        # 动态生成问题
         context = ""
         if previous_round_summary:
             context = f"\n## Previous Round Summary\n{previous_round_summary}\n"
@@ -499,7 +393,6 @@ Respond with just the question, no additional text."""
             question = response.content if hasattr(response, 'content') else str(response)
             question = question.strip()
 
-            # 记录到历史
             self.discussion_history.append({
                 "round": round_number,
                 "question": question
@@ -510,7 +403,6 @@ Respond with just the question, no additional text."""
 
         except Exception as e:
             logger.error(f"Failed to generate question: {str(e)}")
-            # 返回默认问题
             return f"What are your thoughts on {fg.topic}?"
 
     async def summarize_round(
@@ -518,16 +410,6 @@ Respond with just the question, no additional text."""
         round_number: int,
         responses: List[FocusGroupMessage]
     ) -> str:
-        """
-        总结单轮讨论
-
-        Args:
-            round_number: 轮次号
-            responses: 本轮所有参与者的回答
-
-        Returns:
-            str: 轮次摘要
-        """
         if not responses:
             return "No responses in this round."
 
@@ -561,16 +443,6 @@ Provide just the summary, no additional formatting."""
         self,
         all_rounds: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """
-        从所有轮次中提取最终洞察
-
-        Args:
-            all_rounds: 所有轮次的讨论数据
-
-        Returns:
-            List[Dict]: 洞察列表
-        """
-        # 构建讨论摘要
         discussion_summary = ""
         for round_data in all_rounds:
             discussion_summary += f"\n### Round {round_data['round_number']}\n"
@@ -600,7 +472,6 @@ Output as JSON array:
             response = await self.agent.arun(prompt)
             response_text = response.content if hasattr(response, 'content') else str(response)
 
-            # 清理 markdown 格式
             response_text = response_text.strip()
             if response_text.startswith("```json"):
                 response_text = response_text[7:]

@@ -1,7 +1,8 @@
 """
 受众生成工具集
 提供基于 SmolaAgents @tool 装饰器的工具函数
-用于三步流水线：基础信息生成 → 人格特征生成 → 行为模式生成
+用于流水线：基础信息生成 → 人格特征生成 → 行为模式生成
+输出结构与 src/core/models.py 的 AudienceProfile（扁平结构）对齐
 """
 
 import json
@@ -12,22 +13,30 @@ from smolagents import tool
 logger = logging.getLogger(__name__)
 
 
-# ==================== 工具1: 基础信息生成 ====================
-
 @tool
 def generate_demographics(description: str) -> str:
     """
-    根据描述生成受众基础人口统计信息
+    根据描述生成受众基础人口统计信息和职业信息
 
     Args:
         description: 受众描述文本，例如 "35岁左右的互联网产品经理，在一线城市工作"
 
     Returns:
-        JSON字符串，包含 demographics 和 professional 字段
+        JSON字符串，包含扁平的人口统计和职业字段
 
     生成内容包括：
-    - demographics: age, gender, location, education, income_level
-    - professional: industry, position, company_size, work_experience, career_goals
+    - name: 姓名
+    - age: 年龄（整数）
+    - gender: 性别
+    - location: 地理位置
+    - education: 教育程度
+    - marital_status: 婚姻状况
+    - income_level: 收入水平
+    - industry: 所属行业
+    - position: 职位
+    - company_size: 公司规模
+    - work_experience: 工作年限（整数）
+    - career_goals: 职业目标
 
     要求：
     1. 年龄、性别、地区等人口统计信息
@@ -38,51 +47,58 @@ def generate_demographics(description: str) -> str:
 
     logger.info(f"🔧 [generate_demographics] 输入描述: {description[:100]}...")
 
-    # 这是一个工具定义，实际执行由 ToolCallingAgent 完成
-    # Agent 会调用 LLM 并自动填充返回值
-    # 这里的实现不会被执行，仅作为文档和类型提示
-
     return json.dumps({
-        "demographics": {
-            "age": 0,
-            "gender": "",
-            "location": "",
-            "education": "",
-            "income_level": ""
-        },
-        "professional": {
-            "industry": "",
-            "position": "",
-            "company_size": "",
-            "work_experience": 0,
-            "career_goals": ""
-        }
+        "name": "",
+        "age": 0,
+        "gender": "",
+        "location": "",
+        "education": "",
+        "marital_status": "",
+        "income_level": "",
+        "industry": "",
+        "position": "",
+        "company_size": "",
+        "work_experience": 0,
+        "career_goals": ""
     }, ensure_ascii=False)
 
-
-# ==================== 工具2: 人格特征生成 ====================
 
 @tool
 def generate_personality(basic_info_json: str) -> str:
     """
-    基于受众基础信息，生成人格特征
+    基于受众基础信息，生成完整人格特征
 
     Args:
         basic_info_json: 基础信息JSON字符串（来自 generate_demographics 的输出）
 
     Returns:
-        JSON字符串，包含 personality 字段
+        JSON字符串，包含 personality 对象（对齐 Personality 模型全部21个字段）
 
     生成内容包括：
-    - personality_type: MBTI/Big Five 人格类型
+    - personality_type: MBTI人格类型
     - communication_style: 沟通风格
     - core_traits: 核心特质列表
     - key_strengths: 核心优势列表
     - key_weaknesses: 核心劣势列表
     - behavioral_patterns: 行为模式列表
+    - conflict_resolution: 冲突处理方式
+    - decision_process: 决策过程
+    - cognitive_biases: 认知偏差列表
+    - learning_style: 学习风格
+    - problem_solving_approach: 问题解决方法
+    - worldview: 世界观
+    - emotional_patterns: 情绪模式列表
+    - stress_responses: 压力反应
+    - coping_mechanisms: 应对机制
+    - emotional_triggers: 情绪触发器列表
+    - life_experiences: 人生经历列表
+    - growth_areas: 成长领域列表
+    - aspirations: 抱负列表
+    - background_event: 背景事件
+    - event_impact: 事件影响
 
     要求：
-    1. MBTI/Big Five 人格类型
+    1. MBTI人格类型
     2. 沟通风格和行为模式
     3. 核心优势和劣势
     4. 压力反应和冲突处理方式
@@ -98,12 +114,25 @@ def generate_personality(basic_info_json: str) -> str:
             "core_traits": [],
             "key_strengths": [],
             "key_weaknesses": [],
-            "behavioral_patterns": []
+            "behavioral_patterns": [],
+            "conflict_resolution": "",
+            "decision_process": "",
+            "cognitive_biases": [],
+            "learning_style": "",
+            "problem_solving_approach": "",
+            "worldview": "",
+            "emotional_patterns": [],
+            "stress_responses": "",
+            "coping_mechanisms": "",
+            "emotional_triggers": [],
+            "life_experiences": [],
+            "growth_areas": [],
+            "aspirations": [],
+            "background_event": "",
+            "event_impact": ""
         }
     }, ensure_ascii=False)
 
-
-# ==================== 工具3: 行为模式生成 ====================
 
 @tool
 def generate_lifestyle(personality_json: str) -> str:
@@ -114,14 +143,18 @@ def generate_lifestyle(personality_json: str) -> str:
         personality_json: 人格特征JSON字符串（来自 generate_personality 的输出）
 
     Returns:
-        JSON字符串，包含 lifestyle 字段
+        JSON字符串，包含扁平的生活方式字段
 
     生成内容包括：
     - hobbies: 兴趣爱好列表
     - values: 核心价值观列表
     - brand_preferences: 品牌偏好列表
+    - leisure_activities: 休闲活动列表
     - media_consumption: 媒体使用习惯
     - decision_making_style: 决策风格
+    - life_attitudes: 生活态度
+    - risk_tolerance: 风险承受度
+    - social_style: 社交风格
 
     要求：
     1. 消费习惯和品牌偏好
@@ -134,17 +167,17 @@ def generate_lifestyle(personality_json: str) -> str:
     logger.info(f"🔧 [generate_lifestyle] 输入人格特征: {personality_json[:100]}...")
 
     return json.dumps({
-        "lifestyle": {
-            "hobbies": [],
-            "values": [],
-            "brand_preferences": [],
-            "media_consumption": "",
-            "decision_making_style": ""
-        }
+        "hobbies": [],
+        "values": [],
+        "brand_preferences": [],
+        "leisure_activities": [],
+        "media_consumption": "",
+        "decision_making_style": "",
+        "life_attitudes": "",
+        "risk_tolerance": "",
+        "social_style": ""
     }, ensure_ascii=False)
 
-
-# ==================== 工具4: 数据验证 ====================
 
 @tool
 def validate_audience_profile(profile_json: str) -> str:
@@ -152,16 +185,17 @@ def validate_audience_profile(profile_json: str) -> str:
     验证完整受众画像的数据质量和一致性
 
     Args:
-        profile_json: 完整受众画像JSON字符串
+        profile_json: 完整受众画像JSON字符串（扁平结构，对齐 AudienceProfile 模型）
 
     Returns:
         JSON字符串，包含验证结果和错误信息
 
     验证项：
-    1. 必填字段完整性
+    1. 必填字段完整性（name, age, gender, location, education, income_level, industry, position）
     2. 数据类型正确性
     3. 逻辑一致性（如：年龄与职位匹配）
-    4. 内在关联性（如：人格与行为模式一致）
+    4. 人格特征完整性（personality子对象是否完整）
+    5. 内在关联性（如：人格与行为模式一致）
     """
 
     logger.info(f"🔧 [validate_audience_profile] 验证画像: {profile_json[:100]}...")
@@ -170,47 +204,30 @@ def validate_audience_profile(profile_json: str) -> str:
         profile_data = json.loads(profile_json)
         errors = []
 
-        # 基础字段检查
-        required_fields = ["demographics", "professional", "personality", "lifestyle"]
+        required_fields = ["name", "age", "gender", "location", "education", "income_level", "industry", "position"]
         for field in required_fields:
-            if field not in profile_data or not profile_data[field]:
+            if not profile_data.get(field):
                 errors.append(f"缺少必填字段: {field}")
 
-        # 人口统计信息检查
-        if "demographics" in profile_data:
-            demo = profile_data["demographics"]
-            if not demo.get("age") or demo["age"] < 18 or demo["age"] > 100:
-                errors.append("年龄数据无效")
-            if not demo.get("gender"):
-                errors.append("缺少性别信息")
-            if not demo.get("location"):
-                errors.append("缺少地区信息")
+        age = profile_data.get("age", 0)
+        if not isinstance(age, int) or age < 18 or age > 100:
+            errors.append("年龄数据无效")
 
-        # 职业信息检查
-        if "professional" in profile_data:
-            prof = profile_data["professional"]
-            if not prof.get("industry"):
-                errors.append("缺少行业信息")
-            if not prof.get("position"):
-                errors.append("缺少职位信息")
-            work_exp = prof.get("work_experience", 0)
-            age = profile_data.get("demographics", {}).get("age", 0)
-            if work_exp > age - 18:
-                errors.append(f"工作经验({work_exp}年)与年龄({age}岁)不匹配")
+        work_exp = profile_data.get("work_experience", 0)
+        if isinstance(work_exp, int) and isinstance(age, int) and work_exp > age - 18:
+            errors.append(f"工作经验({work_exp}年)与年龄({age}岁)不匹配")
 
-        # 人格特征检查
-        if "personality" in profile_data:
-            pers = profile_data["personality"]
-            if not pers.get("personality_type"):
+        personality = profile_data.get("personality")
+        if personality:
+            if not personality.get("personality_type"):
                 errors.append("缺少人格类型")
-            if not pers.get("core_traits"):
+            if not personality.get("core_traits"):
                 errors.append("缺少核心特质")
+        else:
+            errors.append("缺少人格特征数据")
 
-        # 生活方式检查
-        if "lifestyle" in profile_data:
-            life = profile_data["lifestyle"]
-            if not life.get("values"):
-                errors.append("缺少核心价值观")
+        if not profile_data.get("values"):
+            errors.append("缺少核心价值观")
 
         if errors:
             return json.dumps({
@@ -237,20 +254,18 @@ def validate_audience_profile(profile_json: str) -> str:
         }, ensure_ascii=False)
 
 
-# ==================== 工具5: 数据整合 ====================
-
 @tool
 def merge_audience_data(demographics_json: str, personality_json: str, lifestyle_json: str) -> str:
     """
-    整合三个阶段的生成结果为完整受众画像
+    整合三个阶段的生成结果为完整受众画像（扁平结构）
 
     Args:
-        demographics_json: 基础信息JSON字符串
-        personality_json: 人格特征JSON字符串
-        lifestyle_json: 生活方式JSON字符串
+        demographics_json: 基础信息JSON字符串（扁平字段）
+        personality_json: 人格特征JSON字符串（包含personality子对象）
+        lifestyle_json: 生活方式JSON字符串（扁平字段）
 
     Returns:
-        完整受众画像JSON字符串
+        完整受众画像JSON字符串（扁平结构，对齐 AudienceProfile 模型）
     """
 
     logger.info("🔧 [merge_audience_data] 整合受众数据...")
@@ -260,12 +275,13 @@ def merge_audience_data(demographics_json: str, personality_json: str, lifestyle
         personality_data = json.loads(personality_json)
         lifestyle_data = json.loads(lifestyle_json)
 
-        merged = {
-            "demographics": demographics_data.get("demographics", {}),
-            "professional": demographics_data.get("professional", {}),
-            "personality": personality_data.get("personality", {}),
-            "lifestyle": lifestyle_data.get("lifestyle", {})
-        }
+        merged = {}
+        merged.update(demographics_data)
+        merged.update(lifestyle_data)
+        if "personality" in personality_data:
+            merged["personality"] = personality_data["personality"]
+        else:
+            merged["personality"] = personality_data
 
         logger.info("✅ [merge_audience_data] 数据整合完成")
         return json.dumps(merged, ensure_ascii=False)

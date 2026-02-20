@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# SIRY AI Research - 快速启动脚本
+# AI User Research - 快速启动脚本
 
-echo "🚀 启动 SIRY AI Research API..."
+echo "🚀 启动 AI User Research API..."
 
 # 检查虚拟环境
 if [ ! -d "venv" ]; then

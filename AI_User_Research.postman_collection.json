@@ -1,0 +1,637 @@
+{
+  "info": {
+    "_postman_id": "ai-user-research-v2-2024",
+    "name": "AI User Research API v2.0",
+    "description": "AI驱动的用户研究平台 - 支持四种场景：1对1访谈、问卷调研、焦点小组、受众生成",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://ai-user-research.onrender.com",
+      "type": "string",
+      "description": "API基础URL (本地开发: http://localhost:8000)"
+    },
+    {
+      "key": "api_key",
+      "value": "your-api-key-here",
+      "type": "string",
+      "description": "API认证密钥"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. 系统端点",
+      "item": [
+        {
+          "name": "获取项目信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "获取API基本信息、版本和支持的框架"
+          }
+        },
+        {
+          "name": "健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "检查服务健康状态和API配置"
+          }
+        },
+        {
+          "name": "获取配置",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "获取服务配置信息（不含敏感数据）"
+          }
+        }
+      ]
+    },
+    {
+      "name": "场景一：1对1受众访谈 (Claude Agent SDK)",
+      "item": [
+        {
+          "name": "创建访谈会话",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience_id\": \"audience_123\",\n  \"session_config\": {\n    \"topic\": \"用户体验研究\",\n    \"duration_minutes\": 30,\n    \"interview_style\": \"semi_structured\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/interviews/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "create"]
+            },
+            "description": "创建新的1对1访谈会话"
+          }
+        },
+        {
+          "name": "发送访谈消息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interview_id\": \"interview_123\",\n  \"message\": \"请介绍一下您对我们产品的使用体验\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/interviews/messages/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "messages", "send"]
+            },
+            "description": "发送访谈消息并获取AI回复"
+          }
+        },
+        {
+          "name": "获取访谈消息历史",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interview_id\": \"interview_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/interviews/messages/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "messages", "list"]
+            },
+            "description": "获取访谈的完整对话历史"
+          }
+        },
+        {
+          "name": "结束访谈",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interview_id\": \"interview_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/interviews/end",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "end"]
+            },
+            "description": "结束访谈并生成总结"
+          }
+        },
+        {
+          "name": "获取访谈详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interview_id\": \"interview_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/interviews/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "interviews", "detail"]
+            },
+            "description": "获取访谈会话详细信息"
+          }
+        }
+      ]
+    },
+    {
+      "name": "场景二：问卷批量投放 (Agno Teams)",
+      "item": [
+        {
+          "name": "创建问卷",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"用户满意度调研\",\n  \"description\": \"了解用户对产品的满意度和改进建议\",\n  \"questions\": [\n    {\n      \"id\": \"q1\",\n      \"text\": \"您对我们产品的整体满意度如何？\",\n      \"type\": \"rating\",\n      \"options\": [\"1\", \"2\", \"3\", \"4\", \"5\"]\n    },\n    {\n      \"id\": \"q2\",\n      \"text\": \"您最喜欢产品的哪些功能？\",\n      \"type\": \"multiple_choice\",\n      \"options\": [\"界面设计\", \"功能丰富\", \"响应速度\", \"易用性\"]\n    },\n    {\n      \"id\": \"q3\",\n      \"text\": \"您有什么改进建议？\",\n      \"type\": \"open_ended\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/surveys/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "create"]
+            },
+            "description": "创建新的调研问卷"
+          }
+        },
+        {
+          "name": "批量投放问卷",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_id\": \"survey_123\",\n  \"audience_ids\": [\"audience_1\", \"audience_2\", \"audience_3\"],\n  \"max_concurrency\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/surveys/deploy",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "deploy"]
+            },
+            "description": "批量投放问卷给多个受众（异步任务）"
+          }
+        },
+        {
+          "name": "查询投放进度",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"task_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/surveys/tasks/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "tasks", "query"]
+            },
+            "description": "查询问卷投放任务进度"
+          }
+        },
+        {
+          "name": "获取问卷结果",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_id\": \"survey_123\",\n  \"include_analytics\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/surveys/results/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "results", "query"]
+            },
+            "description": "获取问卷回答结果和统计分析"
+          }
+        },
+        {
+          "name": "获取问卷详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey_id\": \"survey_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/surveys/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "detail"]
+            },
+            "description": "获取问卷详细信息"
+          }
+        },
+        {
+          "name": "获取问卷列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"page_size\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/surveys/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "surveys", "list"]
+            },
+            "description": "获取问卷列表"
+          }
+        }
+      ]
+    },
+    {
+      "name": "场景三：焦点小组批量 (Agno Workflows)",
+      "item": [
+        {
+          "name": "创建焦点小组",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"新产品功能讨论\",\n  \"topic\": \"探讨用户对新功能的需求和期望\",\n  \"moderator_guide\": [\n    \"了解用户当前的使用痛点\",\n    \"探索用户对新功能的期待\",\n    \"收集具体的功能建议\"\n  ],\n  \"max_participants\": 8\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "create"]
+            },
+            "description": "创建新的焦点小组"
+          }
+        },
+        {
+          "name": "添加参与者",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg_123\",\n  \"audience_ids\": [\"audience_1\", \"audience_2\", \"audience_3\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/participants/add",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "participants", "add"]
+            },
+            "description": "添加参与者到焦点小组"
+          }
+        },
+        {
+          "name": "批量生成参与者回答",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg_123\",\n  \"discussion_prompt\": \"大家觉得这个新功能对你们的工作有什么帮助吗？\",\n  \"participant_ids\": [\"p1\", \"p2\", \"p3\"],\n  \"max_concurrency\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/batch-responses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "batch-responses"]
+            },
+            "description": "批量生成参与者回答（异步任务）"
+          }
+        },
+        {
+          "name": "查询批量任务进度",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"batch_task_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/batch-tasks/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "batch-tasks", "query"]
+            },
+            "description": "查询焦点小组批量任务进度"
+          }
+        },
+        {
+          "name": "获取活跃批量任务",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/active-batch-task/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "active-batch-task", "query"]
+            },
+            "description": "获取焦点小组的活跃批量任务"
+          }
+        },
+        {
+          "name": "获取洞察分析",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/insights/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "insights", "query"]
+            },
+            "description": "获取焦点小组的洞察分析"
+          }
+        },
+        {
+          "name": "获取讨论消息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg_123\",\n  \"page\": 1,\n  \"page_size\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/messages/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "messages", "list"]
+            },
+            "description": "获取焦点小组的讨论消息历史"
+          }
+        },
+        {
+          "name": "获取焦点小组详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"focus_group_id\": \"fg_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/focus-groups/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "focus-groups", "detail"]
+            },
+            "description": "获取焦点小组详细信息"
+          }
+        }
+      ]
+    },
+    {
+      "name": "场景四：受众生成流水线 (SmolaAgents Manager)",
+      "item": [
+        {
+          "name": "生成单个受众",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"industry\": \"科技\",\n  \"role\": \"产品经理\",\n  \"age_range\": \"25-35\",\n  \"interests\": [\"用户体验\", \"数据分析\", \"产品创新\"],\n  \"personality_traits\": [\"细心\", \"创新\", \"用户导向\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audiences/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "generate"]
+            },
+            "description": "生成单个受众画像"
+          }
+        },
+        {
+          "name": "批量生成受众",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"count\": 10,\n  \"base_criteria\": {\n    \"industry\": \"互联网\",\n    \"age_range\": \"20-40\",\n    \"location\": \"一线城市\"\n  },\n  \"diversity_params\": {\n    \"role_diversity\": true,\n    \"personality_diversity\": true,\n    \"interest_diversity\": true\n  },\n  \"max_concurrency\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audiences/batch-generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "batch-generate"]
+            },
+            "description": "批量生成多个受众（异步任务）"
+          }
+        },
+        {
+          "name": "查询批量生成进度",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"gen_task_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audiences/tasks/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "tasks", "query"]
+            },
+            "description": "查询批量生成受众的任务进度"
+          }
+        },
+        {
+          "name": "获取受众详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience_id\": \"audience_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audiences/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "detail"]
+            },
+            "description": "获取受众画像详细信息"
+          }
+        },
+        {
+          "name": "获取受众列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"page_size\": 20,\n  \"filters\": {\n    \"industry\": \"科技\",\n    \"age_range\": \"25-35\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audiences/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audiences", "list"]
+            },
+            "description": "获取受众列表（支持筛选）"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -192,7 +192,9 @@ curl http://localhost:8000/config
 
 - **Web 框架**: FastAPI
 - **ASGI 服务器**: Uvicorn
-- **AI 模型**: Anthropic Claude, OpenAI GPT
+- **数据模型**: Pydantic BaseModel (统一模型层)
+- **AI 模型**: Anthropic Claude, OpenAI GPT, OpenRouter
+- **Agent 框架**: Claude Agent SDK, Agno Framework, SmolaAgents
 - **部署平台**: Render.com
 
 ## 文档
@@ -203,6 +205,16 @@ curl http://localhost:8000/config
 - [技术架构文档](docs/02-技术架构文档.md)
 - [设计文档](docs/03-设计文档.md)
 - [API示例文档](docs/04-API示例文档.md)
+
+## 更新日志
+
+### v2.0.0 (2024-02) 🚀
+- 🏗️ **重大架构重构**: 从 backhour_ai 迁移核心模型到统一数据层
+- ✨ **数据模型升级**: 使用 Pydantic BaseModel 作为统一模型基础
+- 🎯 **三大 Agent 框架集成**: Claude Agent SDK, Agno Framework, SmolaAgents
+- 📚 **文档重组**: 整理项目文档，删除重复文件
+- 🔄 **模型统一**: 所有场景共享统一的数据模型定义
+- ⚡ **性能优化**: 优化并发处理和错误重试机制
 
 ## 许可证
 

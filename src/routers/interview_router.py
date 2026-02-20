@@ -9,6 +9,7 @@ from datetime import datetime
 import uuid
 
 from src.routers.deps import verify_api_key
+from src.core.models import AudienceProfile
 
 router = APIRouter(
     prefix="/api/interviews",
@@ -21,8 +22,10 @@ router = APIRouter(
 
 class InterviewCreateRequest(BaseModel):
     audience_id: str = Field(..., description="受众ID")
+    audience_profile: Optional[AudienceProfile] = Field(None, description="受众画像（无状态模式直接传入）")
     topic: str = Field(..., description="访谈主题")
     research_objectives: List[str] = Field(default=[], description="研究目标")
+    message_histories: List[Dict[str, Any]] = Field(default=[], description="历史消息（无状态上下文传递）")
     mcp_tools: List[str] = Field(
         default=["personality", "chat_history", "web_search"],
         description="启用的MCP工具"
@@ -32,10 +35,13 @@ class InterviewCreateRequest(BaseModel):
 class InterviewMessageRequest(BaseModel):
     interview_id: str = Field(..., description="访谈会话ID")
     message: str = Field(..., description="访谈者消息")
+    audience_profile: Optional[AudienceProfile] = Field(None, description="受众画像")
+    message_histories: List[Dict[str, Any]] = Field(default=[], description="历史消息")
 
 
 class EndInterviewRequest(BaseModel):
     interview_id: str = Field(..., description="访谈会话ID")
+    message_histories: List[Dict[str, Any]] = Field(default=[], description="完整对话历史")
 
 
 class GetInterviewRequest(BaseModel):
